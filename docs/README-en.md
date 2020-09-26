@@ -5,7 +5,7 @@ GoogleHomeCLI
 
 # Overview
 
-Operate Google Home (Chrome Cast) in any command-line.  
+Control Google Home (Chrome Cast) in any command-line.  
 This script can only use Python3, so Python2 isn't supported.  
 This script implemented internal command-line.
 
