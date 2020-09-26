@@ -1,5 +1,7 @@
 # GoogleHomeCLI contribution rules
 
+日本語の貢献ルールは[こちら](CONTRIBUTING.md)。
+
 ## Overview
 
 this repository has established some rules to properly contribute as a GoogleHomeCLI contributor.   
