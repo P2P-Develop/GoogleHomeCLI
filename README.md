@@ -1,35 +1,23 @@
-# GoogleHomeCLI
-ぐーぐるほーむ(ChromeCast)を、CLIで動かすやつ
-Youtubeの動画も流せる！
+<h1 align="center">GoogleHomeCLI</h1>
 
+<p align="center">Control Google Home (Chrome Cast) in any command-line.</p>
 
-## 必要なもの
+---
 
-+ ほんたい
+<p align="center">This plugin document supported multi language.</p>
 
-+ Python 3.x
-
-+ PyChromeCast
-` pip install pychromecast `
-
-## こまんど
-
-+ use <デバイスIDまたは名前>
-デバイスを選択するよ！  
-起動すると、最初に認識したデバイスが自動選択されるよ！
-+ play <動画ファイル直リンクまたはYouTubeリンク>
-曲(動画)が再生されるよ！
-+ status
-ステータスがひょうじされるよ！
-+ kill
-プロセスを抹消するよ！
-+ list
-認識しているデバイスリストを表示するよ！
-+ reconnect
-デバイスを再認識させるよ！
-+ exit
-抜け出すよ！
-
-## すぺしゃるさんくす
-
-+  [Erik Cederstrand](https://stackoverflow.com/questions/4356538/how-can-i-extract-video-id-from-youtubes-link-in-python)
+<p align="center">
+    <a href="https://github.com/P2P-Develop/GoogleHomeCLI/blob/master/docs/README-en.md"
+    ><img
+            height="40"
+            src="https://raw.githubusercontent.com/google/region-flags/gh-pages/svg/US.svg"
+            alt="English"
+    ></a>
+    &nbsp;
+    <a href="https://github.com/P2P-Develop/GoogleHomeCLI/blob/master/docs/README-ja.md"
+    ><img
+            height="40"
+            src="https://raw.githubusercontent.com/google/region-flags/gh-pages/svg/JP.svg"
+            alt="日本語"
+    ></a>
+</p>
