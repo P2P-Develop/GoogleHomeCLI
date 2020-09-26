@@ -239,9 +239,11 @@ def get_youtube_file(id):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
+        del sys.argv[0]
         con()
         auto_select()
         command(" ".join(sys.argv))
+        die("", 0)
     pretty_errors.configure(
         separator_character='*',
         filename_display=pretty_errors.FILENAME_EXTENDED,
