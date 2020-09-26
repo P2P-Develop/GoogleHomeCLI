@@ -164,7 +164,8 @@ def command(input_cmd):
 def wait_command():
     while True:
         try:
-            ipt = input("\033[1m>\033[0m ")
+            print("\033[1m>\033[0m ", end="")
+            ipt = input()
         except EOFError:
             break
         command(ipt)
