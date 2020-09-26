@@ -1,5 +1,7 @@
 # GoogleHomeCLI 貢献ルール
 
+For contributors in English, click [here](CONTRIBUTING-en.md).
+
 ## 概要
 
 このリポジトリでは貢献者として適切に貢献するために、以下のルールを制定しています。   
