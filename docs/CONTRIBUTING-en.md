@@ -18,7 +18,6 @@ this repository has established some rules to properly contribute as a GoogleHom
 
 ### Commit manners
 
-- Usually, do not use strange commit names except in **docs**.
 - If you have a GPG key, feel free to sign it.
 - If you can check it, compile it to see if it works and then commit.  
   If you are not sure, and the workflow also fails, commit the fixed changes.
