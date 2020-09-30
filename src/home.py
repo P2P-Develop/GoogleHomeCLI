@@ -173,8 +173,9 @@ def wait_command():
 
 
 def print_device(device_id, device):
-    print("\033[1mDevice\033[0m: [Id=" + str(
-        device_id) + ", Name=" + device.friendly_name + ", Model=" + device.model_name + "]")
+    print(
+        "\033[1mDevice\033[0m: [Id=" + str(device_id) + ", Name=" + device.friendly_name + ", Model=" + device.model_name + "]"
+    )
 
 
 def auto_select():
@@ -212,8 +213,8 @@ def get_youtube_id(url):
     return None
 
 
-def get_youtube_file(id):
-    url = "https://youtube.com/get_video_info?video_id=" + id + "&asv=3&hl=en"
+def get_youtube_file(youtube_id):
+    url = "https://youtube.com/get_video_info?video_id=" + youtube_id + "&asv=3&hl=en"
     resp = requests.get(url)
     if resp.status_code != 200:
         error("An error has occurred.")
