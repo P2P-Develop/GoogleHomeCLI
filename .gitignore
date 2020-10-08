@@ -13,6 +13,8 @@
 *_LOCAL_*.txt
 *_REMOTE_*.txt
 
+.vscode
+
 ### JetBrains+all ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
