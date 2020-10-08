@@ -54,11 +54,13 @@ def run_command(label, args):
             return
         elif label == "show" or label == "status":
             if nowCast is not None:
-                print("Select: [Id=" + str(
-                    nowId) + ", Name=" + nowCast.device.friendly_name + ", Model=" + nowCast.device.model_name + "]")
+                print("Select: [Id=" + str(nowId) + ", Name=" +
+                      nowCast.device.friendly_name + ", Model=" +
+                      nowCast.device.model_name + "]")
                 print("\033[1mStatus\033[0m:")
                 print("    Idle: " + str(nowCast.is_idle))
-                print("    Volume: " + str("{:.0%}".format(nowCast.status.volume_level)))
+                print("    Volume: " +
+                      str("{:.0%}".format(nowCast.status.volume_level)))
                 media = nowCast.media_controller
                 if media.is_active:
                     print("\033[1m\033[35m♪\033[0m \033[1mPlaying\033[0m:")
@@ -128,12 +130,15 @@ def con():
         error("Device not found.")
         return
     if len(preCasts) - 1 > 1:
-        print("\033[32mFound\033[0m: \033[1m" + str(len(preCasts) - 1) + "\033[0m device found.")
+        print("\033[32mFound\033[0m: \033[1m" + str(len(preCasts) - 1) +
+              "\033[0m device found.")
     else:
-        print("\033[32mFound\033[0m: \033[1m" + str(len(preCasts) - 1) + "\033[0m devices found.")
+        print("\033[32mFound\033[0m: \033[1m" + str(len(preCasts) - 1) +
+              "\033[0m devices found.")
 
     for cast in preCasts:
-        if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and cast[0].device.cast_type == "audio":
+        if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and cast[
+                0].device.cast_type == "audio":
             casts += cast
             print_device(len(casts), cast[0].device)
 
@@ -145,7 +150,8 @@ def s_con():
     if len(preCasts[0]) == 0:
         return
     for cast in preCasts:
-        if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and cast[0].device.cast_type == "audio":
+        if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and cast[
+                0].device.cast_type == "audio":
             casts += cast
 
 
@@ -173,9 +179,8 @@ def wait_command():
 
 
 def print_device(device_id, device):
-    print(
-        "\033[1mDevice\033[0m: [Id=" + str(device_id) + ", Name=" + device.friendly_name + ", Model=" + device.model_name + "]"
-    )
+    print("\033[1mDevice\033[0m: [Id=" + str(device_id) + ", Name=" +
+          device.friendly_name + ", Model=" + device.model_name + "]")
 
 
 def auto_select():
@@ -235,8 +240,10 @@ def get_youtube_file(youtube_id):
 
     if "player_response" in param:
         player_response = json.loads(param["player_response"])
-        return {"url": player_response["streamingData"]["formats"][0]["url"],
-                "mime": player_response["streamingData"]["formats"][0]["mimeType"]}
+        return {
+            "url": player_response["streamingData"]["formats"][0]["url"],
+            "mime": player_response["streamingData"]["formats"][0]["mimeType"]
+        }
 
 
 if __name__ == "__main__":
@@ -246,24 +253,27 @@ if __name__ == "__main__":
         auto_select()
         command(" ".join(sys.argv))
         die("", 0)
-    pretty_errors.configure(
-        separator_character='*',
-        filename_display=pretty_errors.FILENAME_EXTENDED,
-        line_number_first=True,
-        display_link=True,
-        lines_before=5,
-        lines_after=2,
-        line_color=pretty_errors.BRIGHT_RED + '> ' + pretty_errors.default_config.line_color,
-        code_color='  ' + pretty_errors.default_config.line_color,
-        truncate_code=True,
-        display_locals=True
-    )
+
+    pretty_errors.configure(separator_character='*',
+                            filename_display=pretty_errors.FILENAME_EXTENDED,
+                            line_number_first=True,
+                            display_link=True,
+                            lines_before=5,
+                            lines_after=2,
+                            line_color=pretty_errors.BRIGHT_RED + '> ' +
+                            pretty_errors.default_config.line_color,
+                            code_color='  ' +
+                            pretty_errors.default_config.line_color,
+                            truncate_code=True,
+                            display_locals=True)
     pretty_errors.activate()
     print("  \033[1m\033[44mGoogleHome CLI\033[0m")
     print(
         "\033[1mMade-By\033[0m: P2P-Develop [\033[34mGitHub\033[0m: \033[34m\033[4mhttps://github.com/P2P-Develop\033[0m]"
     )
-    print("\033[1mContribute in GitHub\033[0m: \033[34m\033[4mhttps://github.com/P2P-Develop/GoogleHomeCLI\033[0m")
+    print(
+        "\033[1mContribute in GitHub\033[0m: \033[34m\033[4mhttps://github.com/P2P-Develop/GoogleHomeCLI\033[0m"
+    )
     print()
     con()
     command_thread = threading.Thread(target=wait_command)
