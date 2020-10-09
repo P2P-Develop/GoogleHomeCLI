@@ -43,10 +43,8 @@ def run_command(label, args):
         if label == "exit" or label == "bye" or label == "stop":
             die("Bye.", 0)
         elif label == "list" or label == "device" or label == "devices" or label == "ls":
-            count = 0
-            for cast in casts:
-                count += 1
-                print_device(count, cast.device)
+            for i, cast in enumerate(casts, start=1):
+                print_device(i, cast.device)
             return
         elif label == "rc" or label == "reconnect":
             casts = []
@@ -87,14 +85,11 @@ def run_command(label, args):
                 nowId = int(name)
                 nowCast.wait()
                 return
-            count = 0
-            # HACK: More smart for loops without variable declaration
-            for c in casts:
-                count += 1
-                if c.device.friendly_name == name:
-                    print_device(count, c.device)
-                    nowId = count
-                    nowCast = c
+            for i, cast in enumerate(casts, start=1):
+                if cast.device.friendly_name == name:
+                    print_device(i, cast.device)
+                    nowId = i
+                    nowCast = cast
                     nowCast.wait()
                     return
             error("Device not found.")
