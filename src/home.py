@@ -15,13 +15,9 @@ def die(message, code):
     exit(code)
 
 
-def error(message):
-    print("\033[31m\033[1mError\033[0m: " + message)
+error = lambda message: print("\033[31m\033[1mError\033[0m: " + message)
 
-
-def ok():
-    print("\033[34mOK.\033[0m")
-
+ok = lambda: print("\033[34mOK.\033[0m")
 
 preCasts = pychromecast.get_chromecasts()
 casts = []
@@ -29,7 +25,7 @@ nowCast = None
 nowId = 0
 
 
-def run_command(label, args):
+def run_command(label, args) -> bool:
     global casts
     global nowCast
     global nowId
@@ -212,7 +208,7 @@ def wait_command():
         if not command(ipt):
             break
 
-        print("\033[32mOK.\033[0m")
+        ok()
 
 
 def print_device(device_id, device):
@@ -238,9 +234,8 @@ def is_url(url):
     return re.compile(r"^(http|https|ftp|blob)://").match(url)
 
 
-def is_youtube(url):
-    return re.compile(
-        r"^((https|http)://)?(www\.)?youtu(be|\.be)?(\.com)?").match(url)
+is_youtube = lambda url: re.compile(
+    r"^((https|http)://)?(www\.)?youtu(be|\.be)?(\.com)?").match(url)
 
 
 # Author: https://stackoverflow.com/questions/4356538/how-can-i-extract-video-id-from-youtubes-link-in-python
