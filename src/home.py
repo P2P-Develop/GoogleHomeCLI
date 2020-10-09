@@ -2,8 +2,10 @@ import json
 import mimetypes
 import re
 import threading
+import yaml
 from urllib import parse
 
+import os
 import sys
 import pychromecast
 import requests
@@ -47,6 +49,7 @@ preCasts = pychromecast.get_chromecasts()
 casts = []
 nowCast = None
 nowId = 0
+prefix = "> "
 
 
 def run_command(label, args):
@@ -61,7 +64,7 @@ def run_command(label, args):
 
     if len(args) == 0:
         if label == "exit" or label == "bye" or label == "stop":
-            print("Bye.")
+            print("\033[32mBye.\033[0m")
 
             return False
         elif label == "list" or label == "device" or label == "devices" or label == "ls":
@@ -222,12 +225,14 @@ def command(input_cmd):
 
 
 def wait_command():
+    global prefix
+
     session = PromptSession()
     while True:
         ipt = ""
 
         try:
-            ipt = session.prompt("> ",
+            ipt = session.prompt(prefix,
                                  completer=FuzzyCompleter(
                                      NestedCompleter.from_nested_dict({
                                          "echo":
@@ -274,7 +279,7 @@ def wait_command():
                                  auto_suggest=AutoSuggestFromHistory(),
                                  lexer=PygmentsLexer(CommandLexer))
         except KeyboardInterrupt:
-            print("Bye.")
+            print("\033[32mBye.\033[0m")
             break
 
         if not command(ipt):
@@ -357,6 +362,13 @@ def get_youtube_file(youtube_id):
 
 
 if __name__ == "__main__":
+    try:
+        with open(os.path.dirname(__file__) + '/config.yml', 'r') as file:
+            config = yaml.load(file, Loader=yaml.SafeLoader)
+            if config is not None and "prompt" in config:
+                prefix = config["prompt"] + " "
+    except FileNotFoundError:
+        error("Config file not found.")
     if len(sys.argv) > 1:
         del sys.argv[0]
         con()
@@ -386,13 +398,9 @@ if __name__ == "__main__":
     )
     print()
     con()
-    try:
-        command_thread = threading.Thread(target=wait_command)
-        command_thread.setDaemon(True)
-        auto_select()
-        print("\033[32mReady.\033[0m")
-        command_thread.start()
-        command_thread.join()
-    except KeyboardInterrupt:
-        print()
-        die("Bye.", 0)
+    command_thread = threading.Thread(target=wait_command)
+    command_thread.setDaemon(True)
+    auto_select()
+    print("\033[32mReady.\033[0m")
+    command_thread.start()
+    command_thread.join()
