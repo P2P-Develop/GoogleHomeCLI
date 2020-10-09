@@ -9,6 +9,30 @@ import pychromecast
 import requests
 import pretty_errors
 
+from prompt_toolkit import PromptSession
+from prompt_toolkit.completion import FuzzyCompleter, NestedCompleter
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.lexers import PygmentsLexer
+from pygments.lexer import RegexLexer
+from pygments.token import *
+
+
+class CommandLexer(RegexLexer):
+    name = "Command"
+    aliases = ["cmd"]
+    filenames = None
+
+    tokens = {
+        'root':
+        [(r'^echo', Keyword), (r'^exit', Keyword), (r'^bye', Keyword),
+         (r'^stop', Keyword), (r'^list', Keyword), (r'^device', Keyword),
+         (r'^devices', Keyword), (r'^ls', Keyword), (r'^reconnect', Keyword),
+         (r'^rc', Keyword), (r'^show', Keyword), (r'^status', Keyword),
+         (r'^kill', Keyword), (r'^use', Keyword), (r'^select', Keyword),
+         (r'^play', Keyword), (r'^sound', Keyword), (r'^music', Keyword),
+         (r'^p', Keyword), (r'^#.*$', Comment)]
+    }
+
 
 def die(message, code):
     print(message)
@@ -25,7 +49,7 @@ nowCast = None
 nowId = 0
 
 
-def run_command(label, args) -> bool:
+def run_command(label, args):
     global casts
     global nowCast
     global nowId
@@ -175,32 +199,82 @@ def s_con():
     if len(preCasts[0]) == 0:
         return
 
-    casts += filter(
-        lambda cast: str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and
-        cast[0].device.cast_type == "audio", preCasts)
+    casts += [
+        cast for cast in preCasts
+        if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>"
+        and cast[0].device.cast_type == "audio"
+    ]
 
 
 def command(input_cmd):
+    if input_cmd.startswith("#"):
+        return True
+
     command = input_cmd.split(" ")
 
     while "" in command:
         command.remove("")
 
     if len(command) == 0:
-        return
+        return True
 
     return run_command(command[0], command[1:])
 
 
 def wait_command():
+    session = PromptSession()
     while True:
         ipt = ""
 
         try:
-            # TODO: Add readline features
-            print("\033[1m>\033[0m ", end="")
-            ipt = input()
-        except EOFError:
+            ipt = session.prompt("> ",
+                                 completer=FuzzyCompleter(
+                                     NestedCompleter.from_nested_dict({
+                                         "echo":
+                                         None,
+                                         "exit":
+                                         None,
+                                         "bye":
+                                         None,
+                                         "stop":
+                                         None,
+                                         "list":
+                                         None,
+                                         "device":
+                                         None,
+                                         "devices":
+                                         None,
+                                         "ls":
+                                         None,
+                                         "kill":
+                                         None,
+                                         "status":
+                                         None,
+                                         "show":
+                                         None,
+                                         "reconnect":
+                                         None,
+                                         "rc":
+                                         None,
+                                         "use":
+                                         None,
+                                         "select":
+                                         None,
+                                         "play": {
+                                             "youtu.be/": None,
+                                             "./": None,
+                                             "/": None
+                                         },
+                                         "p": {
+                                             "youtu.be/": None,
+                                             "./": None,
+                                             "/": None
+                                         }
+                                     })),
+                                 auto_suggest=AutoSuggestFromHistory(),
+                                 lexer=PygmentsLexer(CommandLexer))
+        except KeyboardInterrupt:
+            print("Bye.")
             break
 
         if not command(ipt):
