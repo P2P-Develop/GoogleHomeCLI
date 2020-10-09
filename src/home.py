@@ -42,7 +42,6 @@ def run_command(label, args):
     if len(args) == 0:
         if label == "exit" or label == "bye" or label == "stop":
             print("Bye.")
-            command_thread.do_run = False
             return False
         elif label == "list" or label == "device" or label == "devices" or label == "ls":
             for i, cast in enumerate(casts, start=1):
@@ -76,7 +75,7 @@ def run_command(label, args):
                 else:
                     print("Cancelled.")
             else:
-                error("Device is idling")
+                error("Device is idling.")
             return True
     elif len(args) == 1:
         if label == "use" or label == "select":
@@ -119,6 +118,7 @@ def run_command(label, args):
             error("\033[4m\033[34m" + url + "\033[0m is not url!")
             return True
     error("Command not found.")
+    return True
 
 
 def con():
@@ -160,7 +160,7 @@ def command(input_cmd):
         return
     args = command[1:]
     command = command[0]
-    run_command(command, args)
+    return run_command(command, args)
 
 
 def wait_command():
