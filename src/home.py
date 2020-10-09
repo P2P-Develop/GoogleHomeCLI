@@ -35,8 +35,7 @@ def run_command(label, args):
     global nowId
 
     if label == "echo":
-        word = " ".join(args)
-        print(word)
+        print(" ".join(args))
         return True
 
     if len(args) == 0:
@@ -146,10 +145,11 @@ def s_con():
     preCasts = pychromecast.get_chromecasts()
     if len(preCasts[0]) == 0:
         return
-    for cast in preCasts:
-        if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and cast[
-                0].device.cast_type == "audio":
-            casts += cast
+    casts += [
+        cast for cast in preCasts
+        if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>"
+        and cast[0].device.cast_type == "audio"
+    ]
 
 
 def command(input_cmd):
