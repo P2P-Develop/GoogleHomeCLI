@@ -170,6 +170,7 @@ def command(input_cmd):
 def wait_command():
     while True:
         try:
+            #TODO: Add readline features
             print("\033[1m>\033[0m ", end="")
             ipt = input()
         except EOFError:
