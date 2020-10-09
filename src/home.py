@@ -3,7 +3,6 @@ import mimetypes
 import re
 import threading
 from urllib import parse
-from time import sleep
 
 import sys
 import pychromecast
@@ -38,19 +37,21 @@ def run_command(label, args):
     if label == "echo":
         word = " ".join(args)
         print(word)
-        return
+        return True
 
     if len(args) == 0:
         if label == "exit" or label == "bye" or label == "stop":
-            die("Bye.", 0)
+            print("Bye.")
+            command_thread.do_run = False
+            return False
         elif label == "list" or label == "device" or label == "devices" or label == "ls":
             for i, cast in enumerate(casts, start=1):
                 print_device(i, cast.device)
-            return
+            return True
         elif label == "rc" or label == "reconnect":
             casts = []
             con()
-            return
+            return True
         elif label == "show" or label == "status":
             if nowCast is not None:
                 print("Select: [Id=" + str(nowId) + ", Name=" +
@@ -65,7 +66,7 @@ def run_command(label, args):
                     print("\033[1m\033[35m♪\033[0m \033[1mPlaying\033[0m:")
                     print("    Current: " + str(media.status.current_time))
                     print("    Media: " + media.status.content_id)
-                return
+                return True
         elif label == "kill":
             if not nowCast.is_idle:
                 confirm = input("\033[1mAre you sure?\033[0m (Y/n): ").lower()
@@ -76,7 +77,7 @@ def run_command(label, args):
                     print("Cancelled.")
             else:
                 error("Device is idling")
-            return
+            return True
     elif len(args) == 1:
         if label == "use" or label == "select":
             name = args[0]
@@ -85,17 +86,17 @@ def run_command(label, args):
                 print_device(name, nowCast.device)
                 nowId = int(name)
                 nowCast.wait()
-                return
+                return True
             for i, cast in enumerate(casts, start=1):
                 if cast.device.friendly_name == name:
                     print_device(i, cast.device)
                     nowId = i
                     nowCast = cast
                     nowCast.wait()
-                    return
+                    return True
             error("Device not found.")
             print("\033[1mls\033[0m to show device list.")
-            return
+            return True
         elif label == "play" or label == "sound" or label == "music" or label == "p":
             url = args[0]
             if is_url(url):
@@ -104,19 +105,19 @@ def run_command(label, args):
                     video_id = get_youtube_id(url)
                     if video_id is None:
                         error("Failed to parse selected URL.")
-                        return
+                        return True
                     yt = get_youtube_file(video_id)
                     if yt is None:
-                        return
+                        return True
                     url = yt["url"]
                     mime = yt["mime"]
                 media = nowCast.media_controller
                 media.play_media(url, mime)
                 media.block_until_active()
                 print("Playing...")
-                return
+                return True
             error("\033[4m\033[34m" + url + "\033[0m is not url!")
-            return
+            return True
     error("Command not found.")
 
 
@@ -159,7 +160,6 @@ def command(input_cmd):
         return
     args = command[1:]
     command = command[0]
-
     run_command(command, args)
 
 
@@ -172,7 +172,8 @@ def wait_command():
             ipt = input()
         except EOFError:
             break
-        command(ipt)
+        if not command(ipt):
+            break
         print("\033[32mOK.\033[0m")
 
 
@@ -270,7 +271,7 @@ if __name__ == "__main__":
     pretty_errors.activate()
     print("  \033[1m\033[44mGoogleHome CLI\033[0m")
     print(
-        "\033[1mMade-By\033[0m: P2P-Develop [\033[34mGitHub\033[0m: \033[34m\033[4mhttps://github.com/P2P-Develop\033[0m]"
+        "\033[1mMade by\033[0m: P2P-Develop [\033[34mGitHub\033[0m: \033[34m\033[4mhttps://github.com/P2P-Develop\033[0m]"
     )
     print(
         "\033[1mContribute in GitHub\033[0m: \033[34m\033[4mhttps://github.com/P2P-Develop/GoogleHomeCLI\033[0m"
@@ -279,12 +280,11 @@ if __name__ == "__main__":
     con()
     try:
         command_thread = threading.Thread(target=wait_command)
-        command_thread.daemon = True
+        command_thread.setDaemon(True)
         auto_select()
         print("\033[32mReady.\033[0m")
         command_thread.start()
-        while True:
-            sleep(1)
-    except (KeyboardInterrupt, SystemExit):
+        command_thread.join()
+    except KeyboardInterrupt:
         print()
         die("Bye.", 0)
