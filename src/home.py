@@ -175,11 +175,9 @@ def s_con():
     if len(preCasts[0]) == 0:
         return
 
-    casts += [
-        cast for cast in preCasts
-        if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>"
-        and cast[0].device.cast_type == "audio"
-    ]
+    casts += filter(
+        lambda cast: str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and
+        cast[0].device.cast_type == "audio", preCasts)
 
 
 def command(input_cmd):
