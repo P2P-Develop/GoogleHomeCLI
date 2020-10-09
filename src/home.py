@@ -3,6 +3,7 @@ import mimetypes
 import re
 import threading
 from urllib import parse
+from time import sleep
 
 import sys
 import pychromecast
@@ -164,6 +165,7 @@ def command(input_cmd):
 
 def wait_command():
     while True:
+        ipt = ""
         try:
             # TODO: Add readline features
             print("\033[1m>\033[0m ", end="")
@@ -275,13 +277,14 @@ if __name__ == "__main__":
     )
     print()
     con()
-    command_thread = threading.Thread(target=wait_command)
-    auto_select()
-    print("\033[32mReady.\033[0m")
     try:
+        command_thread = threading.Thread(target=wait_command)
+        command_thread.daemon = True
+        auto_select()
+        print("\033[32mReady.\033[0m")
         command_thread.start()
-        while command_thread.is_alive():
-            command_thread.join()
-    except KeyboardInterrupt:
+        while True:
+            sleep(1)
+    except (KeyboardInterrupt, SystemExit):
         print()
         die("Bye.", 0)
