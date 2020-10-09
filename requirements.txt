@@ -1,3 +1,5 @@
 PyChromecast~=7.4.1
 requests~=2.24.0
 pretty-errors~=1.2.18
+prompt_toolkit~=3.0.5
+Pygments~=2.6.1
