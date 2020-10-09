@@ -1,14 +1,14 @@
 # GoogleHomeCLI
 
-[Overview](#overview) | [Usage](#usage) | [Commands](#commands) | [Thanks](#thanks)
+[Overview](#overview) | [Usage](#usage) | [Commands](#commands) | [Configulation](#configulation) | [Thanks](#thanks)
 
-# Overview
+## Overview
 
 Control Google Home (Chrome Cast) in any command-line.
 This script can only use Python3, so Python2 isn't supported.
 This script implemented internal command-line.
 
-# Usage
+## Usage
 
 Python3 must be available to use this script.
 
@@ -50,66 +50,88 @@ Python3 must be available to use this script.
     $ python3 src/home.py
     ```
 
-# Commands
+## Interactive comments
 
-## `exit`
+GoogleHomeCLI supports interactive comments.
+You can use three symbols: `#`, `//`, and `"`.
+If you do not start with these symbols, they will not be recognized as interactive comments.
+
+## Commands
+
+### `echo`
+
+Prints characters to the console.
+Expand quotation marks when printing if enclosed. The priority is `"`,`'`, \`.
+Be careful not to forget enclosing when write it in quotation marks. It will be error when running.
+
+### `exit`
 
 Exit the script.
-~~The script can exit with ^C.~~ [This is not working.](https://github.com/P2P-Develop/GoogleHomeCLI/issues/2)
+The script can exit with ^C when prompt showing.
 
-### Aliases
+#### Aliases
 
 -   `bye`
 -   `stop`
 
-## `list`
+### `list`
 
 Show recognized devices.
 
-### Aliases
+#### Aliases
 
 -   `device`
 -   `devices`
 -   `ls`
 
-## `kill`
+### `kill`
 
 Kill the process.
 
-## `status`
+### `status`
 
 List connected devices status.
 
-### Alias
+#### Alias
 
 -   `show`
 
-## reconnect
+### reconnect
 
 Reconnect devices.
 
-### Alias
+#### Alias
 
 -   `rc`
 
-## `use <id|name>`
+### `use <id|name>`
 
 Select specified id / name device.
 
-### Alias
+#### Alias
 
 -   `select`
 
-## `play <path|link>`
+### `play <path|link>`
 
 Play specified local file / Youtube URL from selected device.
 
-### Aliases
+#### Aliases
 
 -   `sound`
 -   `music`
 -   `p`
 
-# Thanks
+## Configulation
+
+The Google Home CLI comes with a configuration file.
+The file name is [`config.yml`] (../ src / config.yml) and an error will occur if the config file is not found.
+The settings are as following:
+
+|  Name  | Default value | Description                                                         |
+| :----: | :-----------: | :------------------------------------------------------------------ |
+| Prompt |      ">"      | Sets the first prefix that is displayed when waiting for a command. |
+
+## Thanks
 
 -   [Erik Cederstrand](https://stackoverflow.com/questions/4356538/how-can-i-extract-video-id-from-youtubes-link-in-python) - The proper way to get the ID from Youtube URLs.
