@@ -36,19 +36,23 @@ def run_command(label, args):
 
     if label == "echo":
         print(" ".join(args))
+
         return True
 
     if len(args) == 0:
         if label == "exit" or label == "bye" or label == "stop":
             print("Bye.")
+
             return False
         elif label == "list" or label == "device" or label == "devices" or label == "ls":
             for i, cast in enumerate(casts, start=1):
                 print_device(i, cast.device)
+
             return True
         elif label == "rc" or label == "reconnect":
             casts = []
             con()
+
             return True
         elif label == "show" or label == "status":
             if nowCast is not None:
@@ -59,72 +63,99 @@ def run_command(label, args):
                 print("    Idle: " + str(nowCast.is_idle))
                 print("    Volume: " +
                       str("{:.0%}".format(nowCast.status.volume_level)))
+
                 media = nowCast.media_controller
+
                 if media.is_active:
                     print("\033[1m\033[35m♪\033[0m \033[1mPlaying\033[0m:")
                     print("    Current: " + str(media.status.current_time))
                     print("    Media: " + media.status.content_id)
+
                 return True
         elif label == "kill":
             if not nowCast.is_idle:
                 confirm = input("\033[1mAre you sure?\033[0m (Y/n): ").lower()
+
                 if confirm in "y" or confirm in "\n":
                     print("Killing...")
                     nowCast.quit_app()
                 else:
                     print("Cancelled.")
+
             else:
                 error("Device is idling.")
+
             return True
     elif len(args) == 1:
         if label == "use" or label == "select":
             name = args[0]
+
             if name.isdecimal() and len(casts) >= int(name) and name != "0":
                 nowCast = casts[int(name) - 1]
                 print_device(name, nowCast.device)
                 nowId = int(name)
                 nowCast.wait()
+
                 return True
+
             for i, cast in enumerate(casts, start=1):
                 if cast.device.friendly_name == name:
                     print_device(i, cast.device)
                     nowId = i
                     nowCast = cast
                     nowCast.wait()
+
                     return True
+
             error("Device not found.")
             print("\033[1mls\033[0m to show device list.")
+
             return True
         elif label == "play" or label == "sound" or label == "music" or label == "p":
             url = args[0]
+
             if is_url(url):
                 mime = mimetypes.guess_type(url)[0]
+
                 if is_youtube(url):
                     video_id = get_youtube_id(url)
+
                     if video_id is None:
                         error("Failed to parse selected URL.")
+
                         return True
+
                     yt = get_youtube_file(video_id)
+
                     if yt is None:
                         return True
+
                     url = yt["url"]
                     mime = yt["mime"]
+
                 media = nowCast.media_controller
                 media.play_media(url, mime)
                 media.block_until_active()
                 print("Playing...")
+
                 return True
+
             error("\033[4m\033[34m" + url + "\033[0m is not url!")
+
             return True
+
     error("Command not found.")
+
     return True
 
 
 def con():
     global casts
+
     if len(preCasts[0]) == 0:
         error("Device not found.")
         return
+
     if len(preCasts) - 1 > 1:
         print("\033[32mFound\033[0m: \033[1m" + str(len(preCasts) - 1) +
               "\033[0m device found.")
@@ -142,9 +173,12 @@ def con():
 def s_con():
     global casts
     global preCasts
+
     preCasts = pychromecast.get_chromecasts()
+
     if len(preCasts[0]) == 0:
         return
+
     casts += [
         cast for cast in preCasts
         if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>"
@@ -154,26 +188,30 @@ def s_con():
 
 def command(input_cmd):
     command = input_cmd.split(" ")
+
     while "" in command:
         command.remove("")
+
     if len(command) == 0:
         return
-    args = command[1:]
-    command = command[0]
-    return run_command(command, args)
+
+    return run_command(command[0], command[1:])
 
 
 def wait_command():
     while True:
         ipt = ""
+
         try:
             # TODO: Add readline features
             print("\033[1m>\033[0m ", end="")
             ipt = input()
         except EOFError:
             break
+
         if not command(ipt):
             break
+
         print("\033[32mOK.\033[0m")
 
 
@@ -184,23 +222,25 @@ def print_device(device_id, device):
 
 def auto_select():
     global nowCast
+
     if len(casts) == 0:
         return
+
     nowCast = preCasts[0][0]
+
     print("\033[1mDevice selected\033[0m:")
     nowCast.wait()
 
 
 def is_url(url):
-    s = re.compile(r"^(http|https|ftp|blob)://")
     if url in " ":
         return False
-    return s.match(url)
+    return re.compile(r"^(http|https|ftp|blob)://").match(url)
 
 
 def is_youtube(url):
-    s = re.compile(r"^((https|http)://)?(www\.)?youtu(be|\.be)?(\.com)?")
-    return s.match(url)
+    return re.compile(
+        r"^((https|http)://)?(www\.)?youtu(be|\.be)?(\.com)?").match(url)
 
 
 # Author: https://stackoverflow.com/questions/4356538/how-can-i-extract-video-id-from-youtubes-link-in-python
@@ -210,8 +250,7 @@ def get_youtube_id(url):
         return query.path[1:]
     if query.hostname in ('www.youtube.com', 'youtube.com'):
         if query.path == '/watch':
-            p = parse.parse_qs(query.query)
-            return p['v'][0]
+            return parse.parse_qs(query.query)['v'][0]
         if query.path[:7] == '/embed/' or query.path[:3] == '/v/':
             return query.path.split('/')[2]
     error("Hostname didn't match any hosts")
@@ -219,22 +258,24 @@ def get_youtube_id(url):
 
 
 def get_youtube_file(youtube_id):
-    url = "https://youtube.com/get_video_info?video_id=" + youtube_id + "&asv=3&hl=en"
-    resp = requests.get(url)
+    resp = requests.get("https://youtube.com/get_video_info?video_id=" +
+                        youtube_id + "&asv=3&hl=en")
+
     if resp.status_code != 200:
         error("Youtube returned status \033[32m" + str(resp.status_code) +
-              "\033[0m.")
+              "\033[0m")
         print(resp.text)
         return None
-    r = resp.text.split("&")
+
     param = {}
-    for parm in r:
+
+    for parm in resp.text.split("&"):
         lst = parm.split("=")
+
         if len(lst) != 2:
             continue
-        key = lst[0]
-        value = parse.unquote(lst[1])
-        param[key] = value
+
+        param[lst[0]] = parse.unquote(lst[1])
 
     if "status" in param and param["status"] == "fail":
         error("Youtube response isn't includes \033[1m\033[32mstatus\033[0m")
