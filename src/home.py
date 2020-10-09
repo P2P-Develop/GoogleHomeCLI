@@ -88,6 +88,7 @@ def run_command(label, args):
                 nowCast.wait()
                 return
             count = 0
+            # HACK: More smart for loops without variable declaration
             for c in casts:
                 count += 1
                 if c.device.friendly_name == name:
@@ -110,8 +111,7 @@ def run_command(label, args):
                         return
                     yt = get_youtube_file(video_id)
                     if yt is None:
-                        error("An error has occurred.")
-
+                        return
                     url = yt["url"]
                     mime = yt["mime"]
                 media = nowCast.media_controller
@@ -170,7 +170,7 @@ def command(input_cmd):
 def wait_command():
     while True:
         try:
-            #TODO: Add readline features
+            # TODO: Add readline features
             print("\033[1m>\033[0m ", end="")
             ipt = input()
         except EOFError:
@@ -216,6 +216,7 @@ def get_youtube_id(url):
             return p['v'][0]
         if query.path[:7] == '/embed/' or query.path[:3] == '/v/':
             return query.path.split('/')[2]
+    error("Hostname didn't match any hosts")
     return None
 
 
@@ -223,7 +224,8 @@ def get_youtube_file(youtube_id):
     url = "https://youtube.com/get_video_info?video_id=" + youtube_id + "&asv=3&hl=en"
     resp = requests.get(url)
     if resp.status_code != 200:
-        error("An error has occurred.")
+        error("Youtube returned status \033[32m" + str(resp.status_code) +
+              "\033[0m.")
         print(resp.text)
         return None
     r = resp.text.split("&")
@@ -237,6 +239,7 @@ def get_youtube_file(youtube_id):
         param[key] = value
 
     if "status" in param and param["status"] == "fail":
+        error("Youtube response isn't includes \033[1m\033[32mstatus\033[0m")
         return None
 
     if "player_response" in param:
@@ -253,7 +256,7 @@ if __name__ == "__main__":
         con()
         auto_select()
         command(" ".join(sys.argv))
-        die("", 0)
+        exit(0)
 
     pretty_errors.configure(separator_character='*',
                             filename_display=pretty_errors.FILENAME_EXTENDED,
