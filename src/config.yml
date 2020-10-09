@@ -1,0 +1,4 @@
+# GoogleHomeCLI configulation
+---
+# For use a custom prompt, comment out this property
+# prompt: "$"
