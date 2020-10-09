@@ -4,9 +4,9 @@
 
 The current version does not have a security check.
 
-| Version | Supported          |
-| :-----: | :----------------- |
-|   1.0   | :x:                |
+| Version | Supported |
+| :-----: | :-------- |
+|   1.0   | :x:       |
 
 ## Reporting a Vulnerability
 
