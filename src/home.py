@@ -32,7 +32,8 @@ class CommandLexer(RegexLexer):
          (r'^rc', Keyword), (r'^show', Keyword), (r'^status', Keyword),
          (r'^kill', Keyword), (r'^use', Keyword), (r'^select', Keyword),
          (r'^play', Keyword), (r'^sound', Keyword), (r'^music', Keyword),
-         (r'^p', Keyword), (r'^#.*$', Comment)]
+         (r'^p', Keyword), (r'^#.*$', Comment), (r'^//.*$', Comment),
+         (r'^".*$', Comment)]
     }
 
 
@@ -58,7 +59,20 @@ def run_command(label, args):
     global nowId
 
     if label == "echo":
-        print(" ".join(args))
+        if " ".join(args).count("\"") % 2 != 0 or " ".join(args).count(
+                "'") % 2 != 0 or " ".join(args).count("`") % 2 != 0:
+            error("Quotes are not closed.")
+
+            return True
+
+        if any("\"" in arg for arg in args):
+            print(" ".join(args).replace("\"", "").replace("\\", "\""))
+        elif any("'" in arg for arg in args):
+            print(" ".join(args).replace("'", ""))
+        elif any("`" in arg for arg in args):
+            print(" ".join(args).replace("`", ""))
+        else:
+            print(" ".join(args))
 
         return True
 
@@ -210,7 +224,8 @@ def s_con():
 
 
 def command(input_cmd):
-    if input_cmd.startswith("#"):
+    if input_cmd.startswith("#") or input_cmd.startswith(
+            "//") or input_cmd.startswith("\""):
         return True
 
     command = input_cmd.split(" ")
@@ -270,11 +285,8 @@ def wait_command():
                                              "./": None,
                                              "/": None
                                          },
-                                         "p": {
-                                             "youtu.be/": None,
-                                             "./": None,
-                                             "/": None
-                                         }
+                                         "//":
+                                         None
                                      })),
                                  auto_suggest=AutoSuggestFromHistory(),
                                  lexer=PygmentsLexer(CommandLexer))
