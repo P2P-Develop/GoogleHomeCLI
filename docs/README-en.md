@@ -1,6 +1,6 @@
 # GoogleHomeCLI
 
-[Overview](#overview) | [Usage](#usage) | [Commands](#commands) | [Configulation](#configulation) | [Thanks](#thanks)
+[Overview](#overview) | [Usage](#usage) | [Commands](#commands) | [Configulation](#configulation) | [Package requirement](../requirements.txt) | [Thanks](#thanks)
 
 ## Overview
 
