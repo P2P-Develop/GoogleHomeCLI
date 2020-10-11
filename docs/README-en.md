@@ -128,9 +128,9 @@ The Google Home CLI comes with a configuration file.
 The file name is [`config.yml`] (../ src / config.yml) and an error will occur if the config file is not found.
 The settings are as following:
 
-|  Name  | Default value | Description                                                         |
-| :----: | :-----------: | :------------------------------------------------------------------ |
-| Prompt |      ">"      | Sets the first prefix that is displayed when waiting for a command. |
+|  Name  | Default value | Description                                     |
+| :----: | :-----------: | :---------------------------------------------- |
+| Prompt |      ">"      | First prompt prefix when waiting for a command. |
 
 ## Thanks
 
