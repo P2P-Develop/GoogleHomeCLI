@@ -1,24 +1,22 @@
-from datetime import datetime
 import json
 import mimetypes
+import os
 import re
+import sys
 import threading
-from action_completer import ActionCompleter
-
-import yaml
+from datetime import datetime
 from urllib import parse
 
-import os
-import sys
-import pychromecast
-from gtts import gTTS
-import requests
 import pretty_errors
-
+import pychromecast
+import requests
+import yaml
 from action_completer import ActionCompleter
+from gtts import gTTS
 from prompt_toolkit import PromptSession
-from prompt_toolkit.completion import FuzzyCompleter
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.completion import FuzzyCompleter
+from prompt_toolkit.filters import Condition
 from prompt_toolkit.lexers import PygmentsLexer
 from pygments.lexer import RegexLexer, inherit
 from pygments.token import *
@@ -133,13 +131,17 @@ def _exit_action() -> None:
 
 
 @cmd_completer.action("speak",
-                      display_meta="Play Text-To-Speech from selected device")
+                      display_meta="Play Text-To-Speech from selected device",
+                      active=Condition(lambda: nowCast is not None))
 @cmd_completer.action("speech",
-                      display_meta="Play Text-To-Speech from selected device")
+                      display_meta="Play Text-To-Speech from selected device",
+                      active=Condition(lambda: nowCast is not None))
 @cmd_completer.action("talk",
-                      display_meta="Play Text-To-Speech from selected device")
+                      display_meta="Play Text-To-Speech from selected device",
+                      active=Condition(lambda: nowCast is not None))
 @cmd_completer.action("tts",
-                      display_meta="Play Text-To-Speech from selected device")
+                      display_meta="Play Text-To-Speech from selected device",
+                      active=Condition(lambda: nowCast is not None))
 @cmd_completer.param(None)
 def _tts_action(*args) -> None:
     global nowCast
@@ -214,7 +216,7 @@ def _status_action() -> None:
             print("    Media: " + media.status.content_id)
 
 
-@cmd_completer.action("kill", display_meta="Kill the selected device")
+@cmd_completer.action("kill", display_meta="Kill the selected device", active=Condition(lambda: nowCast is not None))
 def _kill_action() -> None:
     if not nowCast.is_idle:
         confirm = input("\033[1mAre you sure?\033[0m (Y/n): ").lower()
@@ -260,19 +262,28 @@ def _use_action(name: str) -> None:
 
 @cmd_completer.action(
     "play",
-    display_meta="Play URL/local music or video file from the selected device")
+    display_meta="Play URL/local music or video file from the selected device",
+    active=Condition(lambda: nowCast is not None))
 @cmd_completer.action(
     "sound",
-    display_meta="Play URL/local music or video file from the selected device")
+    display_meta="Play URL/local music or video file from the selected device",
+    active=Condition(lambda: nowCast is not None))
 @cmd_completer.action(
     "music",
-    display_meta="Play URL/local music or video file from the selected device")
+    display_meta="Play URL/local music or video file from the selected device",
+    active=Condition(lambda: nowCast is not None))
 @cmd_completer.action(
     "p",
-    display_meta="Play URL/local music or video file from the selected device")
+    display_meta="Play URL/local music or video file from the selected device",
+    active=Condition(lambda: nowCast is not None))
 @cmd_completer.param(None)
 def _play_action(url: str) -> None:
     global nowCast
+
+    if nowCast is None:
+        error("Device isn't selected!")
+
+        return
 
     if is_url(url):
         mime = mimetypes.guess_type(url)[0]
@@ -321,7 +332,7 @@ def con() -> bool:
 
     for cast in preCasts:
         if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and cast[
-                0].device.cast_type == "audio":
+            0].device.cast_type == "audio":
             casts += cast
             print_device(len(casts), cast[0].device)
 
@@ -340,7 +351,7 @@ def s_con() -> None:
     casts += [
         cast for cast in preCasts
         if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>"
-        and cast[0].device.cast_type == "audio"
+           and cast[0].device.cast_type == "audio"
     ]
 
 
@@ -364,7 +375,7 @@ def wait_command() -> None:
             break
 
         if ipt.startswith("#") or ipt.startswith("//") or ipt.startswith(
-                "\"") or ipt.startswith(";"):
+            "\"") or ipt.startswith(";"):
             ok()
             continue
         elif ipt.startswith("/*"):
@@ -483,9 +494,9 @@ if __name__ == "__main__":
                             lines_before=5,
                             lines_after=2,
                             line_color=pretty_errors.BRIGHT_RED + '> ' +
-                            pretty_errors.default_config.line_color,
+                                       pretty_errors.default_config.line_color,
                             code_color='  ' +
-                            pretty_errors.default_config.line_color,
+                                       pretty_errors.default_config.line_color,
                             truncate_code=True,
                             display_locals=True)
     pretty_errors.activate()
