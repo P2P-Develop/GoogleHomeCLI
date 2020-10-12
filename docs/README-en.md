@@ -1,6 +1,35 @@
 # GoogleHomeCLI
 
-[Overview](#overview) | [Usage](#usage) | [Commands](#commands) | [Configulation](#configulation) | [Package requirement](../requirements.txt) | [Thanks](#thanks)
+[Overview](#overview) | [Usage](#usage) | [Commands](#commands) | [Configuration](#configuration) | [Contributing](CONTRIBUTING.md) | [Security](SECURITY.md) | [Package requirement](../requirements.txt) | [Thanks](#thanks)
+
+<details>
+<summary>Table of Contents</summary>
+
+- [GoogleHomeCLI](#googlehomecli)
+  - [Overview](#overview)
+  - [Usage](#usage)
+  - [Interactive comments](#interactive-comments)
+  - [Commands](#commands)
+    - [`echo`](#echo)
+    - [`tts`](#tts)
+      - [Aliases](#aliases)
+    - [`exit`](#exit)
+      - [Aliases](#aliases-1)
+    - [`list`](#list)
+      - [Aliases](#aliases-2)
+    - [`kill`](#kill)
+    - [`status`](#status)
+      - [Alias](#alias)
+    - [`reconnect`](#reconnect)
+      - [Alias](#alias-1)
+    - [`use <id|name>`](#use-idname)
+      - [Alias](#alias-2)
+    - [`play <path|link>`](#play-pathlink)
+      - [Aliases](#aliases-3)
+  - [Configuration](#configuration)
+  - [Thanks](#thanks)
+
+</details>
 
 ## Overview
 
@@ -15,40 +44,40 @@ Python3 must be available to use this script.
 1. Clone the repository.
    If you not avail `git`, download directory from GitHub and extract it.
 
-    in HTTPS:
+   in HTTPS:
 
-    ```bash
-    $ git clone https://github.com/P2P-Develop/GoogleHomeCLI --depth 1
-    ```
+   ```bash
+   $ git clone https://github.com/P2P-Develop/GoogleHomeCLI --depth 1
+   ```
 
-    in SSH:
+   in SSH:
 
-    ```bash
-    $ git clone git@github.com:P2P-Develop/GoogleHomeCLI --depth 1
-    ```
+   ```bash
+   $ git clone git@github.com:P2P-Develop/GoogleHomeCLI --depth 1
+   ```
 
-    in [Github CLI](https://github.com/cli/cli):
+   in [Github CLI](https://github.com/cli/cli):
 
-    ```bash
-    $ gh repo clone P2P-Develop/GoogleHomeCLI --depth 1
-    ```
+   ```bash
+   $ gh repo clone P2P-Develop/GoogleHomeCLI --depth 1
+   ```
 
 2. Access the cloned repository.
 
-    ```bash
-    $ cd GoogleHomeCLI
-    ```
+   ```bash
+   $ cd GoogleHomeCLI
+   ```
 
 3. Install required packages.
 
-    ```bash
-    $ python3 -m pip install -r requirements.txt
-    ```
+   ```bash
+   $ python3 -m pip install -r requirements.txt
+   ```
 
 4. Run script.
-    ```bash
-    $ python3 src/home.py
-    ```
+   ```bash
+   $ python3 src/home.py
+   ```
 
 ## Interactive comments
 
@@ -64,6 +93,17 @@ Prints characters to the console.
 Expand quotation marks when printing if enclosed. The priority is `"`,`'`, \`.
 Be careful not to forget enclosing when write it in quotation marks. It will be error when running.
 
+### `tts`
+
+Play Text-To-Speech from the selected device.
+This command supported quotations like [`echo`](#echo).
+
+#### Aliases
+
+- `speak`
+- `speech`
+- `talk`
+
 ### `exit`
 
 Exit the script.
@@ -71,8 +111,8 @@ The script can exit with ^C when prompt showing.
 
 #### Aliases
 
--   `bye`
--   `stop`
+- `bye`
+- `stop`
 
 ### `list`
 
@@ -80,13 +120,13 @@ Show recognized devices.
 
 #### Aliases
 
--   `device`
--   `devices`
--   `ls`
+- `device`
+- `devices`
+- `ls`
 
 ### `kill`
 
-Kill the process.
+Kill the selected device.
 
 ### `status`
 
@@ -94,15 +134,15 @@ List connected devices status.
 
 #### Alias
 
--   `show`
+- `show`
 
-### reconnect
+### `reconnect`
 
 Reconnect devices.
 
 #### Alias
 
--   `rc`
+- `rc`
 
 ### `use <id|name>`
 
@@ -110,7 +150,7 @@ Select specified id / name device.
 
 #### Alias
 
--   `select`
+- `select`
 
 ### `play <path|link>`
 
@@ -118,20 +158,20 @@ Play specified local file / Youtube URL from selected device.
 
 #### Aliases
 
--   `sound`
--   `music`
--   `p`
+- `sound`
+- `music`
+- `p`
 
-## Configulation
+## Configuration
 
 The Google Home CLI comes with a configuration file.
-The file name is [`config.yml`] (../ src / config.yml) and an error will occur if the config file is not found.
+The file name is [`config.yml`](../src/config.yml) and an error will occur if the config file is not found.
 The settings are as following:
 
 |  Name  | Default value | Description                                     |
 | :----: | :-----------: | :---------------------------------------------- |
-| Prompt |      ">"      | First prompt prefix when waiting for a command. |
+| prompt |      ">"      | First prompt prefix when waiting for a command. |
 
 ## Thanks
 
--   [Erik Cederstrand](https://stackoverflow.com/questions/4356538/how-can-i-extract-video-id-from-youtubes-link-in-python) - The proper way to get the ID from Youtube URLs.
+- [Erik Cederstrand](https://stackoverflow.com/questions/4356538/how-can-i-extract-video-id-from-youtubes-link-in-python) - The proper way to get the ID from Youtube URLs.

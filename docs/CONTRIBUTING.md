@@ -1,33 +1,43 @@
-# GoogleHomeCLI 貢献ルール
+# GoogleHomeCLI contribution rules
 
-For contributors in English, click [here](CONTRIBUTING-en.md).
+[Overview](README-en.md#overview) | [Usage](README-en.md#usage) | [Commands](README-en.md#commands) | [Configuration](README-en.md#configuration) | Contributing | [Security](SECURITY.md) | [Package requirement](../requirements.txt) | [Thanks](README-en.md#thanks)
 
-## 概要
+<details>
+<summary>Table of Contents</summary>
 
-このリポジトリでは貢献者として適切に貢献するために、以下のルールを制定しています。
+- [GoogleHomeCLI contribution rules](#googlehomecli-contribution-rules)
+  - [Overview](#overview)
+    - [Issue, Pull Request manners](#issue-pull-request-manners)
+    - [Commit manners](#commit-manners)
+    - [See also](#see-also)
 
-### Issue, Pull Request のマナー
+</details>
 
--   なるべく重複している Issue を作らないようにしましょう。
-    重複している Issue には\[duplicate\]ラベルと Issue 言及がされるので、気付いたらちゃんと閉じてよね！
--   Issue で質問する時は**賢い質問**を心掛けましょう。
-    質問する際は\[question\]ラベルを付けて頂くと、開発者が質問を見つけやすくなります (もちろん皆さんが回答しても問題ありません)。
--   `develop`にダイレクトにコミットできない場合は、Pull Request は**フォーク先のブランチ**からしましょう。
-    リポジトリでは**基本**ブランチを`mastre`、`develop`の二つのみにしています。
--   Pull Request のベースは必ず`develop`ブランチを選びましょう。
-    `master`はリリースされてからそのままの安定したソースコードのみ残しています。
--   Pull Request や Issue はなるべくテンプレートを使用するようにしましょう。
-    英語のテンプレートしか用意していませんが、日本語でも英語でも、ロシア語でも中国語でもグジャラト語でもなんでも大丈夫です。解読に遅れが生じること以外は問題ございません。
+日本語の貢献ルールは[こちら](CONTRIBUTING-ja.md)。
 
-### コミットのマナー
+## Overview
 
--   **docs**以外ではあまり変なコミット名を使わないようにしましょう。
-    別にちょっと遊ぶだけなら大丈夫です。開発者までもが遊んでいるので。それが PSAC ｸｵﾘﾃｨ。
--   GPG キーが使えるなら遠慮せず使って大丈夫です。
--   確認できる場合はコミット前にスクリプトの構文エラーを修正し、正常に動作するか確認しましょう。
-    もし見落としがあった場合はその修正コミットを行ってください。
-    > **注意: 修正コミットで大きな変更は加えないようにしましょう。**
+this repository has established some rules to properly contribute as a GoogleHomeCLI contributor.
 
-### 参照
+### Issue, Pull Request manners
 
--   [行動規範](CODE_OF_CONDUCT.md)
+- Try to minimize duplicate issue.
+  The duplicate issue has a \[duplicate\] label and a reference to the issue, so if you notice it, close it.
+- When asking questions in Issue, keep in mind **smart questions**.
+  Please use the \[question\] label when asking a question.
+- If you cannot modify `develop` directly, please create a pull request from the **forked branch**.
+  this repository has two branches, `master` and `develop`.
+- Be sure to select the `develop` as the basis for your pull request.
+  `master` holds only the source code that is stable at the time of release.
+- Try to use pull requests and publishing templates as much as possible.
+
+### Commit manners
+
+- If you have a GPG key, feel free to sign it.
+- If you check syntax, then commit.
+  If you are not sure, commit the fixed changes.
+  > **Note: Do not make significant changes in the fix commit.**
+
+### See also
+
+[Code of Conduct](CODE_OF_CONDUCT.md)
