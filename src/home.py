@@ -184,7 +184,7 @@ def _list_action() -> None:
 
 @cmd_completer.action("reconnect", display_meta="Recognize devices again")
 @cmd_completer.action("rc", display_meta="Recognize devices again")
-def _reconmect_action() -> None:
+def _reconnect_action() -> None:
     global casts
 
     casts = []
@@ -305,12 +305,12 @@ def _play_action(url: str) -> None:
     return
 
 
-def con() -> None:
+def con() -> bool:
     global casts
 
     if len(preCasts[0]) == 0:
         error("Device not found.")
-        return
+        return False
 
     if len(preCasts) - 1 > 1:
         print("\033[32mFound\033[0m: \033[1m" + str(len(preCasts) - 1) +
@@ -324,6 +324,8 @@ def con() -> None:
                 0].device.cast_type == "audio":
             casts += cast
             print_device(len(casts), cast[0].device)
+
+    return True
 
 
 def s_con() -> None:
@@ -445,7 +447,7 @@ def get_youtube_file(youtube_id: str):
         param[lst[0]] = parse.unquote(lst[1])
 
     if "status" in param and param["status"] == "fail":
-        error("Youtube response isn't includes \033[1m\033[32mstatus\033[0m")
+        error("Youtube response isn't includes \033[1m\033[32emstatus\033[0m")
         return None
 
     if "player_response" in param:
@@ -466,7 +468,10 @@ if __name__ == "__main__":
         error("Config file not found.")
     if len(sys.argv) > 1:
         del sys.argv[0]
-        con()
+
+        if not con():
+            exit(1)
+
         auto_select()
         cmd_completer.run_action(" ".join(sys.argv))
         exit(0)
