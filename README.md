@@ -4,7 +4,7 @@
 
 ---
 
-<p align="center">This plugin document is supporting multi language.</p>
+<p align="center">This document is supporting multi language.</p>
 
 <p align="center">
     <a href="https://github.com/P2P-Develop/GoogleHomeCLI/blob/master/docs/README-en.md"
