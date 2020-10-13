@@ -195,8 +195,7 @@ def _status_action() -> None:
               nowCast.device.model_name + "]")
         print("\033[1mStatus\033[0m:")
         print("    Idle: " + str(nowCast.is_idle))
-        print("    Volume: " +
-              str("{:.0%}".format(nowCast.status.volume_level)))
+        print("    Volume: " + str("{:.0%}".format(nowCast.status.volume_level)))
 
         media = nowCast.media_controller
 
@@ -231,7 +230,9 @@ def _use_action(name: str) -> None:
 
     if name.isdecimal() and len(casts) >= int(name) and name != "0":
         nowCast = casts[int(name) - 1]
-        print_device(name, nowCast.device)
+
+        print_device(int(name), nowCast.device)
+
         nowId = int(name)
         nowCast.wait()
 
@@ -240,6 +241,7 @@ def _use_action(name: str) -> None:
     for i, cast in enumerate(casts, start=1):
         if cast.device.friendly_name == name:
             print_device(i, cast.device)
+
             nowId = i
             nowCast = cast
             nowCast.wait()
@@ -295,6 +297,7 @@ def _play_action(url: str) -> None:
             mime = yt["mime"]
 
         media = nowCast.media_controller
+
         media.play_media(url, mime)
         media.block_until_active()
         print("Playing...")
@@ -321,9 +324,9 @@ def con() -> bool:
               "\033[0m devices found.")
 
     for cast in preCasts:
-        if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and cast[
-            0].device.cast_type == "audio":
+        if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and cast[0].device.cast_type == "audio":
             casts += cast
+
             print_device(len(casts), cast[0].device)
 
     return True
@@ -340,8 +343,7 @@ def s_con() -> None:
 
     casts += [
         cast for cast in preCasts
-        if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>"
-           and cast[0].device.cast_type == "audio"
+        if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and cast[0].device.cast_type == "audio"
     ]
 
 
@@ -350,6 +352,7 @@ def wait_command() -> None:
     global prefix
 
     session = PromptSession()
+
     while True:
         ipt = ""
 
@@ -362,31 +365,38 @@ def wait_command() -> None:
                                  mouse_support=True)
         except KeyboardInterrupt:
             print("\033[32mBye.\033[0m")
+
             break
 
-        if ipt.startswith("#") or ipt.startswith("//") or ipt.startswith(
-            "\"") or ipt.startswith(";"):
+        if any(ipt.startswith(match) for match in ["#", "//", '"', ";"]):
             ok()
+
             continue
         elif ipt.startswith("/*"):
             if not ipt.endswith("*/"):
                 error("This comment block must be enclosed in */")
+
                 continue
+
             ok()
+
             continue
 
         try:
             cmd_completer.run_action(ipt)
         except ValueError:
             error("Command not found.")
+
             continue
 
         ok()
 
 
 def print_device(device_id: int, device) -> None:
-    print("\033[1mDevice\033[0m: [Id=" + str(device_id) + ", Name=" +
-          device.friendly_name + ", Model=" + device.model_name + "]")
+    print("\033[1mDevice\033[0m: ["
+          f"Id={str(device_id)},"
+          f"Name={device.friendly_name},"
+          f"Model={device.model_name}")
 
 
 def auto_select() -> None:
@@ -404,37 +414,40 @@ def auto_select() -> None:
 def is_url(url: str):
     if url in " ":
         return False
+
     return re.compile(r"^(http|https|ftp|blob)://").match(url)
 
 
 def is_youtube(url: str):
-    re.compile(r"^((https|http)://)?(www\.)?youtu(be|\.be)?(\.com)?").match(
-        url)
+    re.compile(r"^((https|http)://)?(www\.)?youtu(be|\.be)?(\.com)?").match(url)
 
 
 # Author: https://stackoverflow.com/questions/4356538/how-can-i-extract-video-id-from-youtubes-link-in-python
 def get_youtube_id(url: str):
     query = parse.urlparse(url)
+
     if query.hostname == 'youtu.be':
         return query.path[1:]
+
     if query.hostname in ('www.youtube.com', 'youtube.com'):
         if query.path == '/watch':
             return parse.parse_qs(query.query)['v'][0]
+
         if query.path[:7] == '/embed/' or query.path[:3] == '/v/':
             return query.path.split('/')[2]
+
     error("Hostname didn't match any hosts")
+
     return
 
 
 def get_youtube_file(youtube_id: str):
-    resp = requests.get(
-        f"https://youtube.com/get_video_info?video_id={youtube_id}&asv=3&hl=en"
-    )
+    resp = requests.get(f"https://youtube.com/get_video_info?video_id={youtube_id}&asv=3&hl=en")
 
     if resp.status_code != 200:
-        error(
-            f"Youtube returned status \033[32m{str(resp.status_code)}\033[0m")
+        error(f"Youtube returned status \033[32m{str(resp.status_code)}\033[0m")
         print(resp.text)
+
         return None
 
     param = {}
@@ -449,10 +462,12 @@ def get_youtube_file(youtube_id: str):
 
     if "status" in param and param["status"] == "fail":
         error("Youtube response isn't includes \033[1m\033[32emstatus\033[0m")
+
         return None
 
     if "player_response" in param:
         player_response = json.loads(param["player_response"])
+
         return {
             "url": player_response["streamingData"]["formats"][0]["url"],
             "mime": player_response["streamingData"]["formats"][0]["mimeType"]
@@ -467,7 +482,12 @@ if __name__ == "__main__":
                 prefix = f"{config['prompt']} "
     except FileNotFoundError:
         error("Config file not found.")
+
     if len(sys.argv) > 1:
+        if any(match in sys.argv for match in ["--version", "--ver", "version", "ver", "-v"]):
+            print("v2.0")
+            exit(0)
+
         del sys.argv[0]
 
         if not con():
@@ -490,6 +510,7 @@ if __name__ == "__main__":
                             truncate_code=True,
                             display_locals=True)
     pretty_errors.activate()
+
     print("  \033[1m\033[44mGoogleHome CLI\033[0m")
     print(
         "\033[1mMade by\033[0m: P2P-Develop [\033[34mGitHub\033[0m: \033[34m\033[4mhttps://github.com/P2P-Develop\033[0m]"
@@ -498,10 +519,13 @@ if __name__ == "__main__":
         "\033[1mContribute in GitHub\033[0m: \033[34m\033[4mhttps://github.com/P2P-Develop/GoogleHomeCLI\033[0m"
     )
     print()
+
     con()
     command_thread = threading.Thread(target=wait_command)
     command_thread.setDaemon(True)
     auto_select()
+
     print("\033[32mReady.\033[0m")
+
     command_thread.start()
     command_thread.join()
