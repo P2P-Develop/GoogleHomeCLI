@@ -18,66 +18,47 @@ from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import FuzzyCompleter
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.lexers import PygmentsLexer
-from pygments.lexer import RegexLexer, inherit
-from pygments.token import *
+from pygments.lexer import RegexLexer, include
+import pygments.token
 
 
-class BaseLexer(RegexLexer):
-    tokens = {
-        'root': [
-            (r'^(//|#|"|;|/\*.*?\*/).*$', Comment),
-            (r'"', String, 'string'),
-            (r'\'', String, 'string'),
-            (r'`', String, 'string'),
-            (r'\s+', Text),
-        ],
-        'string': [
-            (r'[^"]+', String),
-            (r'[^\']+', String),
-            (r'[^`]+', String),
-            (r'"|\'|`', String, '#pop'),
-        ]
-    }
-
-
-class CommandLexer(BaseLexer):
+class CommandLexer(RegexLexer):
     name = "Command"
     aliases = ["cmd"]
     filenames = None
 
     tokens = {
         'root': [
-            (r'^echo', Keyword),
-            (r'^exit', Keyword),
-            (r'^bye', Keyword),
-            (r'^stop', Keyword),
-            (r'^list', Keyword),
-            (r'^devices?', Keyword),
-            (r'^ls', Keyword),
-            (r'^reconnect', Keyword),
-            (r'^rc', Keyword),
-            (r'^show', Keyword),
-            (r'^status', Keyword),
-            (r'^kill', Keyword),
-            (r'^use', Keyword),
-            (r'^select', Keyword),
-            (r'^play', Keyword),
-            (r'^sound', Keyword),
-            (r'^music', Keyword),
-            (r'^p', Keyword),
-            (r'^speech', Keyword),
-            (r'^speak', Keyword),
-            (r'^talk', Keyword),
-            (r'^tts', Keyword),
-            (r'[0-9]+', Number),
-            inherit,
+            include('basic'),
+            include('data'),
+            include('math'),
+            include('string')
+        ],
+        'basic': [
+            (r'\b(echo|exit|bye|stop|list|devices|ls|reconnect|'
+             r'rc|show|status|kill|use|select|play|sound|music|'
+             r'p|speech|speak|talk|tts)(?=[\s)`])?', pygments.token.Name.Builtin),
+            (r'\\[\w\W\"\'\`]', pygments.token.String.Escape),
+            (r'^(//|#|"|;|/\*.*?\*/).*$', pygments.token.Comment.Single)
+        ],
+        'data': [
+            (r'\|', pygments.token.Punctuation),
+            (r'\s+', pygments.token.Text),
+            (r'\d+\b', pygments.token.Number)
+        ],
+        'math': [
+            (r'[-+*/%^|&]|\*\*|\|\|', pygments.token.Operator),
+            (r'\d+#\d+', pygments.token.Number),
+            (r'\d+#(?! )', pygments.token.Number),
+            (r'\d+', pygments.token.Number)
         ],
         'string': [
-            (r'[^"\\]+', String),
-            (r'[^\'\\]+', String),
-            (r'[^`\\]+', String),
-            (r'\\.', String.Escape),
-            (r'"|\'|`', String, "#pop"),
+            (r'(?s)\$"(\\\\|\\[0-7]+|\\.|[^"\\])*"', pygments.token.String.Double),
+            (r'(?s)".*?"', pygments.token.String.Double),
+            (r"(?s)\$'(\\\\|\\[0-7]+|\\.|[^'\\])*'", pygments.token.String.Single),
+            (r"(?s)'.*?'", pygments.token.String.Single),
+            (r"(?s)\$`(\\\\|\\[0-7]+|\\.|[^`\\])*`", pygments.token.String.Backtick),
+            (r"(?s)`.*?`", pygments.token.String.Backtick)
         ]
     }
 
@@ -93,6 +74,12 @@ def error(message: str) -> None:
 
 def ok() -> None:
     print("\033[34mOK.\033[0m")
+
+
+def quote_check(args: str) -> bool:
+    return " ".join(args).replace("\\\"", "").count("\"") % 2 != 0 or \
+           " ".join(args).count("'") % 2 != 0 or \
+           " ".join(args).count("`") % 2 != 0
 
 
 preCasts = pychromecast.get_chromecasts()
@@ -112,15 +99,20 @@ def _echo_action(*args) -> None:
         print()
         return
 
-    if " ".join(args).replace("\\\"", "").count("\"") % 2 != 0 or \
-        " ".join(args).count("'") % 2 != 0 or \
-        " ".join(args).count("`") % 2 != 0:
+    if quote_check(" ".join(args)):
         error("Quotes are not closed.")
 
         return
 
-    print(" ".join(args).replace("\\r", "").replace("\\n", "\n").replace(
-        "\"", "").replace("\\", "\"").replace("'", "").replace("`", ""))
+    text = " ".join(args).replace("\\r", "").replace("\\n", "\n").replace(
+        "\"", "").replace("\\", "\"").replace("'", "").replace("`", "")
+
+    if "|" in text:
+        pipes = text.split("|")
+        for pipe in pipes[1:]:
+            cmd_completer.run_action(f"{pipe} {' '.join(pipes[0].split(' ')[0:])}")
+    else:
+        print(text)
 
 
 @cmd_completer.action("exit", display_meta="Exit this script")
@@ -146,9 +138,7 @@ def _exit_action() -> None:
 def _tts_action(*args) -> None:
     global nowCast
 
-    if " ".join(args).replace("\\\"", "").count("\"") % 2 != 0 or \
-        " ".join(args).count("'") % 2 != 0 or \
-        " ".join(args).count("`") % 2 != 0:
+    if quote_check(" ".join(args)):
         error("Quotes are not closed.")
 
         return
