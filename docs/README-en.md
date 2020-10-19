@@ -166,7 +166,7 @@ Play specified local file / Youtube URL from selected device.
 ## Configuration
 
 The Google Home CLI comes with a configuration file.
-The file name is [`config.yml`](../src/config.yml) and an error will occur if the config file is not found.
+The file name is [`config.yml`](../src/config.yml) and if the config file is not found you will get an error but it will **continue to work**.
 The settings are as following:
 
 |  Name  | Default value | Description                                     |
