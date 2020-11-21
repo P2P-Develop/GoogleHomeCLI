@@ -1,6 +1,6 @@
 # GoogleHomeCLI 貢献ルール
 
-[概要](README-ja.md#概要) | [使用方法](README-ja.md#使用方法) | [コマンド](README-ja.md#コマンド) | [コンフィグ](README-ja.md#コンフィグ) | 貢献ルール | [セキュリティー](SECURITY-ja.md) | [必要なパッケージ](../requirements.txt) | [賛辞](README-ja.md#賛辞)
+[概要](README-ja.md#概要) | [使用方法](README-ja.md#使用方法) | [コマンド](README-ja.md#コマンド) | [設定](README-ja.md#設定) | 貢献ルール | [セキュリティー](SECURITY-ja.md) | [必要なパッケージ](../requirements.txt) | [賛辞](README-ja.md#賛辞)
 
 <details>
 <summary>目次</summary>
@@ -43,4 +43,4 @@ For contributors in English, click [here](CONTRIBUTING.md).
 
 ### 参照
 
-- [行動規範](CODE_OF_CONDUCT.md)
+- [行動規範](CODE-OF-CONDUCT-ja.md)

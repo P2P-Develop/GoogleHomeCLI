@@ -1,11 +1,14 @@
 import json
 import mimetypes
 import os
+from decimal import Decimal, ROUND_HALF_UP
 import re
 import sys
 import threading
+import time
 from datetime import datetime
 from urllib import parse
+from colorama import init, Fore, Back, Style
 
 import pretty_errors
 import pychromecast
@@ -14,12 +17,13 @@ import yaml
 from action_completer import ActionCompleter
 from gtts import gTTS
 from prompt_toolkit import PromptSession
-from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory, ThreadedAutoSuggest
 from prompt_toolkit.completion import FuzzyCompleter
 from prompt_toolkit.filters import Condition
+from prompt_toolkit.history import InMemoryHistory, ThreadedHistory
 from prompt_toolkit.lexers import PygmentsLexer
 from pygments.lexer import RegexLexer, include
-import pygments.token
+import pygments.token as token
 
 
 class CommandLexer(RegexLexer):
@@ -35,30 +39,30 @@ class CommandLexer(RegexLexer):
             include('string')
         ],
         'basic': [
-            (r'\b(echo|exit|bye|stop|list|devices|ls|reconnect|'
+            (r'\b(echo|exit|bye|stop|list|devices?|ls|reconnect|'
              r'rc|show|status|kill|use|select|play|sound|music|'
-             r'p|speech|speak|talk|tts)(?=[\s)`])?', pygments.token.Name.Builtin),
-            (r'\\[\w\W\"\'\`]', pygments.token.String.Escape),
-            (r'^(//|#|"|;|/\*.*?\*/).*$', pygments.token.Comment.Single)
+             r'p|speech|speak|talk|tts)(?=[\s)`])?', token.Name.Builtin),
+            (r'\\[\w\W\"\'\`]', token.String.Escape),
+            (r'^(//|#|"|;|/\*.*?\*/).*$', token.Comment.Single)
         ],
         'data': [
-            (r'\|', pygments.token.Punctuation),
-            (r'\s+', pygments.token.Text),
-            (r'\d+\b', pygments.token.Number)
+            (r'\|', token.Punctuation),
+            (r'\s+', token.Text),
+            (r'\d+\b', token.Number)
         ],
         'math': [
-            (r'[-+*/%^|&]|\*\*|\|\|', pygments.token.Operator),
-            (r'\d+#\d+', pygments.token.Number),
-            (r'\d+#(?! )', pygments.token.Number),
-            (r'\d+', pygments.token.Number)
+            (r'[-+*/%^|&]|\*\*|\|\|', token.Operator),
+            (r'\d+#\d+', token.Number),
+            (r'\d+#(?! )', token.Number),
+            (r'\d+', token.Number)
         ],
         'string': [
-            (r'(?s)\$"(\\\\|\\[0-7]+|\\.|[^"\\])*"', pygments.token.String.Double),
-            (r'(?s)".*?"', pygments.token.String.Double),
-            (r"(?s)\$'(\\\\|\\[0-7]+|\\.|[^'\\])*'", pygments.token.String.Single),
-            (r"(?s)'.*?'", pygments.token.String.Single),
-            (r"(?s)\$`(\\\\|\\[0-7]+|\\.|[^`\\])*`", pygments.token.String.Backtick),
-            (r"(?s)`.*?`", pygments.token.String.Backtick)
+            (r'(?s)\$"(\\\\|\\[0-7]+|\\.|[^"\\])*"', token.String.Double),
+            (r'(?s)".*?"', token.String.Double),
+            (r"(?s)\$'(\\\\|\\[0-7]+|\\.|[^'\\])*'", token.String.Single),
+            (r"(?s)'.*?'", token.String.Single),
+            (r"(?s)\$`(\\\\|\\[0-7]+|\\.|[^`\\])*`", token.String.Backtick),
+            (r"(?s)`.*?`", token.String.Backtick)
         ]
     }
 
@@ -69,11 +73,12 @@ def die(message: str, code: int) -> None:
 
 
 def error(message: str) -> None:
-    print("\033[31m\033[1mError\033[0m: " + message)
+    print(f"{Back.LIGHTRED_EX + Fore.BLACK}  ERROR  {Back.RESET + Fore.LIGHTWHITE_EX} " + message)
 
 
-def ok() -> None:
-    print("\033[34mOK.\033[0m")
+def ok(execution_time: float) -> None:
+    print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  OK  {Back.RESET + Fore.LIGHTWHITE_EX} "
+          f"The command finished in {Decimal(str(execution_time)).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)}ms.")
 
 
 def quote_check(args: str) -> bool:
@@ -82,11 +87,14 @@ def quote_check(args: str) -> bool:
            " ".join(args).count("`") % 2 != 0
 
 
-preCasts = pychromecast.get_chromecasts()
+pre_casts = pychromecast.get_chromecasts()
 casts = []
 cmd_completer: ActionCompleter = ActionCompleter()
-nowCast = None
-nowId = 0
+cmd_auto_suggest: ThreadedAutoSuggest = ThreadedAutoSuggest(AutoSuggestFromHistory())
+cmd_history: ThreadedHistory = ThreadedHistory(InMemoryHistory())
+cmd_lexer: PygmentsLexer = PygmentsLexer(CommandLexer)
+now_cast = None
+now_id = 0
 prefix = "> "
 
 
@@ -119,31 +127,31 @@ def _echo_action(*args) -> None:
 @cmd_completer.action("bye", display_meta="Exit this script")
 @cmd_completer.action("stop", display_meta="Exit the script")
 def _exit_action() -> None:
-    die("\033[32mBye.\033[0m", 0)
+    die(f"{Fore.LIGHTGREEN_EX}Bye.", 0)
 
 
 @cmd_completer.action("speak",
                       display_meta="Play Text-To-Speech from selected device",
-                      active=Condition(lambda: nowCast is not None))
+                      active=Condition(lambda: now_cast is not None))
 @cmd_completer.action("speech",
                       display_meta="Play Text-To-Speech from selected device",
-                      active=Condition(lambda: nowCast is not None))
+                      active=Condition(lambda: now_cast is not None))
 @cmd_completer.action("talk",
                       display_meta="Play Text-To-Speech from selected device",
-                      active=Condition(lambda: nowCast is not None))
+                      active=Condition(lambda: now_cast is not None))
 @cmd_completer.action("tts",
                       display_meta="Play Text-To-Speech from selected device",
-                      active=Condition(lambda: nowCast is not None))
+                      active=Condition(lambda: now_cast is not None))
 @cmd_completer.param(None)
 def _tts_action(*args) -> None:
-    global nowCast
+    global now_cast
 
     if quote_check(" ".join(args)):
         error("Quotes are not closed.")
 
         return
 
-    if nowCast is not None:
+    if now_cast is not None:
         text = " ".join(args).replace("\"", "").replace("\\", "\"").replace(
             "'", "").replace("`", "")
 
@@ -153,7 +161,7 @@ def _tts_action(*args) -> None:
 
         tts.save(f"cache/{filename}")
 
-        media = nowCast.media_controller
+        media = now_cast.media_controller
 
         media.play_media(f"cache/{filename}", "audio/mp3")
         media.block_until_active()
@@ -187,32 +195,34 @@ def _reconnect_action() -> None:
 @cmd_completer.action("show", display_meta="Show connected devices status")
 @cmd_completer.action("status", display_meta="Show connected devices status")
 def _status_action() -> None:
-    global nowCast
+    global now_cast
 
-    if nowCast is not None:
-        print("Select: [Id=" + str(nowId) + ", Name=" +
-              nowCast.device.friendly_name + ", Model=" +
-              nowCast.device.model_name + "]")
-        print("\033[1mStatus\033[0m:")
-        print("    Idle: " + str(nowCast.is_idle))
-        print("    Volume: " + str("{:.0%}".format(nowCast.status.volume_level)))
+    if now_cast is not None:
+        print(f"{Back.LIGHTBLUE_EX + Fore.BLACK}  SUMMARY  {Back.RESET + Fore.LIGHTWHITE_EX} Selected device summary:")
+        print(f"    {Fore.GREEN}Id{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(now_id) + Fore.WHITE + Style.DIM},")
+        print(f"    {Fore.GREEN}Name{Fore.RESET}: {Fore.LIGHTCYAN_EX + now_cast.device.friendly_name + Fore.WHITE + Style.DIM},")
+        print(f"    {Fore.GREEN}Model{Fore.RESET}: {Fore.LIGHTCYAN_EX + now_cast.device.model_name}")
+        print()
+        print(f"{Back.LIGHTBLUE_EX + Fore.BLACK}  STATUS  {Back.RESET + Fore.LIGHTWHITE_EX} Selected device status:")
+        print(f"    {Fore.GREEN}Idle{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(now_cast.is_idle) + Fore.WHITE + Style.DIM},")
+        print(f"    {Fore.GREEN}Volume{Fore.RESET}: {Fore.LIGHTCYAN_EX + str('{:.0%}'.format(now_cast.status.volume_level)) + Fore.WHITE + Style.DIM}")
 
-        media = nowCast.media_controller
+        media = now_cast.media_controller
 
         if media.is_active:
-            print("\033[1m\033[35m♪\033[0m \033[1mPlaying\033[0m:")
-            print("    Current: " + str(media.status.current_time))
-            print("    Media: " + media.status.content_id)
+            print(f"{Back.LIGHTMAGENTA_EX + Fore.BLACK}  PLAYING  {Back.RESET + Fore.LIGHTWHITE_EX} Playing music:")
+            print(f"    {Fore.GREEN}Current{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(media.status.current_time) + Fore.WHITE + Style.DIM},")
+            print(f"    {Fore.GREEN}Media{Fore.RESET}: {Fore.LIGHTCYAN_EX + media.status.content_id + Fore.WHITE + Style.DIM}")
 
 
-@cmd_completer.action("kill", display_meta="Kill the selected device", active=Condition(lambda: nowCast is not None))
+@cmd_completer.action("kill", display_meta="Kill the selected device", active=Condition(lambda: now_cast is not None))
 def _kill_action() -> None:
-    if not nowCast.is_idle:
-        confirm = input("\033[1mAre you sure?\033[0m (Y/n): ").lower()
+    if not now_cast.is_idle:
+        confirm = input(f"{Fore.BLUE}? {Fore.LIGHTWHITE_EX}Are you sure? {Fore.WHITE + Style.DIM}(Y/n){Style.RESET_ALL} ").lower()
 
         if confirm in "y" or confirm in "\n" or confirm in "true":
             print("Killing...")
-            nowCast.quit_app()
+            now_cast.quit_app()
         else:
             print("Cancelled.")
     else:
@@ -225,16 +235,16 @@ def _kill_action() -> None:
                      display_meta="Select device \"{completion}\"")
 def _use_action(name: str) -> None:
     global casts
-    global nowCast
-    global nowId
+    global now_cast
+    global now_id
 
     if name.isdecimal() and len(casts) >= int(name) and name != "0":
-        nowCast = casts[int(name) - 1]
+        now_cast = casts[int(name) - 1]
 
-        print_device(int(name), nowCast.device)
+        print_device(int(name), now_cast.device)
 
-        nowId = int(name)
-        nowCast.wait()
+        now_id = int(name)
+        now_cast.wait()
 
         return
 
@@ -242,37 +252,37 @@ def _use_action(name: str) -> None:
         if cast.device.friendly_name == name:
             print_device(i, cast.device)
 
-            nowId = i
-            nowCast = cast
-            nowCast.wait()
+            now_id = i
+            now_cast = cast
+            now_cast.wait()
 
             return
 
     error("Device not found.")
-    print("\033[1mls\033[0m to show device list.")
+    print(f"{Fore.LIGHTGREEN_EX}ls{Fore.LIGHTWHITE_EX} to show found device list.")
 
 
 @cmd_completer.action(
     "play",
     display_meta="Play URL/local music or video file from the selected device",
-    active=Condition(lambda: nowCast is not None))
+    active=Condition(lambda: now_cast is not None))
 @cmd_completer.action(
     "sound",
     display_meta="Play URL/local music or video file from the selected device",
-    active=Condition(lambda: nowCast is not None))
+    active=Condition(lambda: now_cast is not None))
 @cmd_completer.action(
     "music",
     display_meta="Play URL/local music or video file from the selected device",
-    active=Condition(lambda: nowCast is not None))
+    active=Condition(lambda: now_cast is not None))
 @cmd_completer.action(
     "p",
     display_meta="Play URL/local music or video file from the selected device",
-    active=Condition(lambda: nowCast is not None))
+    active=Condition(lambda: now_cast is not None))
 @cmd_completer.param(None)
 def _play_action(url: str) -> None:
-    global nowCast
+    global now_cast
 
-    if nowCast is None:
+    if now_cast is None:
         error("Device isn't selected!")
 
         return
@@ -296,7 +306,7 @@ def _play_action(url: str) -> None:
             url = yt["url"]
             mime = yt["mime"]
 
-        media = nowCast.media_controller
+        media = now_cast.media_controller
 
         media.play_media(url, mime)
         media.block_until_active()
@@ -304,7 +314,7 @@ def _play_action(url: str) -> None:
 
         return
 
-    error("\033[4m\033[34m" + url + "\033[0m is not url!")
+    error(f"\033[4m{Fore.LIGHTBLUE_EX + url + Style.RESET_ALL} is not a valid url!")
 
     return
 
@@ -312,18 +322,18 @@ def _play_action(url: str) -> None:
 def con() -> bool:
     global casts
 
-    if len(preCasts[0]) == 0:
+    if len(pre_casts[0]) == 0:
         error("Device not found.")
         return False
 
-    if len(preCasts) - 1 > 1:
-        print("\033[32mFound\033[0m: \033[1m" + str(len(preCasts) - 1) +
-              "\033[0m device found.")
+    if len(pre_casts) - 1 > 1:
+        print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  SUCCESS  {Back.RESET} "
+              f"{Fore.LIGHTCYAN_EX + str(len(pre_casts) - 1) + Fore.RESET} device found.")
     else:
-        print("\033[32mFound\033[0m: \033[1m" + str(len(preCasts) - 1) +
-              "\033[0m devices found.")
+        print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  SUCCESS  {Back.RESET} "
+              f"{Fore.LIGHTCYAN_EX + str(len(pre_casts) - 1) + Fore.RESET} devices found.")
 
-    for cast in preCasts:
+    for cast in pre_casts:
         if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and cast[0].device.cast_type == "audio":
             casts += cast
 
@@ -334,15 +344,15 @@ def con() -> bool:
 
 def s_con() -> None:
     global casts
-    global preCasts
+    global pre_casts
 
-    preCasts = pychromecast.get_chromecasts()
+    pre_casts = pychromecast.get_chromecasts()
 
-    if len(preCasts[0]) == 0:
+    if len(pre_casts[0]) == 0:
         return
 
     casts += [
-        cast for cast in preCasts
+        cast for cast in pre_casts
         if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and cast[0].device.cast_type == "audio"
     ]
 
@@ -351,36 +361,34 @@ def wait_command() -> None:
     global cmd_completer
     global prefix
 
-    session = PromptSession()
+    session = PromptSession(
+        prefix,
+        completer=FuzzyCompleter(cmd_completer),
+        complete_while_typing=True,
+        complete_in_thread=True,
+        lexer=cmd_lexer,
+        mouse_support=True,
+        enable_history_search=True,
+        auto_suggest=cmd_auto_suggest,
+        history=cmd_history
+    )
 
     while True:
-        ipt = ""
-
         try:
-            ipt = session.prompt(prefix,
-                                 completer=FuzzyCompleter(cmd_completer),
-                                 auto_suggest=AutoSuggestFromHistory(),
-                                 lexer=PygmentsLexer(CommandLexer),
-                                 complete_in_thread=True,
-                                 mouse_support=True)
+            ipt = session.prompt()
         except KeyboardInterrupt:
-            print("\033[32mBye.\033[0m")
+            print(f"{Fore.LIGHTGREEN_EX}Bye.")
 
             break
 
         if any(ipt.startswith(match) for match in ["#", "//", '"', ";"]):
-            ok()
-
             continue
-        elif ipt.startswith("/*"):
-            if not ipt.endswith("*/"):
-                error("This comment block must be enclosed in */")
-
-                continue
-
-            ok()
-
+        elif ipt.startswith("/*") and not ipt.endswith("*/"):
+            error("This comment block must be enclosed in */")
+        elif ipt.startswith("/*") and ipt.endswith("*/"):
             continue
+
+        start = time.perf_counter()
 
         try:
             cmd_completer.run_action(ipt)
@@ -388,27 +396,33 @@ def wait_command() -> None:
             error("Command not found.")
 
             continue
+        except TypeError:
+            error("Argument(s) missing or invalid.")
 
-        ok()
+            continue
+
+        end = time.perf_counter()
+
+        ok(end - start)
 
 
 def print_device(device_id: int, device) -> None:
-    print("\033[1mDevice\033[0m: ["
-          f"Id={str(device_id)},"
-          f"Name={device.friendly_name},"
-          f"Model={device.model_name}")
+    print(f"{Back.LIGHTBLUE_EX + Fore.BLACK}  DEVICE  ")
+    print(f"    {Fore.GREEN}Id{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(device_id) + Fore.WHITE + Style.DIM},")
+    print(f"    {Fore.GREEN}Name{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(device.friendly_name) + Fore.WHITE + Style.DIM},")
+    print(f"    {Fore.GREEN}Model{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(device.model_name)}")
 
 
 def auto_select() -> None:
-    global nowCast
+    global now_cast
 
     if len(casts) == 0:
         return
 
-    nowCast = preCasts[0][0]
+    now_cast = pre_casts[0][0]
 
-    print("\033[1mDevice selected\033[0m:")
-    nowCast.wait()
+    print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  SUCCESS  {Back.RESET + Fore.LIGHTWHITE_EX} Device selected.")
+    now_cast.wait()
 
 
 def is_url(url: str):
@@ -445,8 +459,8 @@ def get_youtube_file(youtube_id: str):
     resp = requests.get(f"https://youtube.com/get_video_info?video_id={youtube_id}&asv=3&hl=en")
 
     if resp.status_code != 200:
-        error(f"Youtube returned status \033[32m{str(resp.status_code)}\033[0m")
-        print(resp.text)
+        error(f"Youtube returned status {Fore.CYAN + str(resp.status_code)}")
+        error(resp.text)
 
         return None
 
@@ -461,7 +475,7 @@ def get_youtube_file(youtube_id: str):
         param[lst[0]] = parse.unquote(lst[1])
 
     if "status" in param and param["status"] == "fail":
-        error("Youtube response isn't includes \033[1m\033[32emstatus\033[0m")
+        error(f"Youtube response isn't includes {Fore.CYAN}status")
 
         return None
 
@@ -475,17 +489,19 @@ def get_youtube_file(youtube_id: str):
 
 
 if __name__ == "__main__":
+    init(autoreset=True)
+
     try:
         with open(f"{os.path.dirname(__file__)}/config.yml", 'r') as file:
             config = yaml.load(file, Loader=yaml.SafeLoader)
             if config is not None and "prompt" in config:
                 prefix = f"{config['prompt']} "
     except FileNotFoundError:
-        error("Config file not found.")
+        error(f"{os.path.dirname(__file__)}/config.yml not found.")
 
     if len(sys.argv) > 1:
-        if any(match in sys.argv for match in ["--version", "--ver", "version", "ver", "-v"]):
-            print("v2.0")
+        if any(match in sys.argv for match in ["--version", "--ver", "version", "ver", "-v", "-V"]):
+            print("v2.1")
             exit(0)
 
         del sys.argv[0]
@@ -497,26 +513,26 @@ if __name__ == "__main__":
         cmd_completer.run_action(" ".join(sys.argv))
         exit(0)
 
-    pretty_errors.configure(separator_character='*',
+    pretty_errors.configure(separator_character="*",
                             filename_display=pretty_errors.FILENAME_EXTENDED,
                             line_number_first=True,
                             display_link=True,
                             lines_before=5,
                             lines_after=2,
-                            line_color=pretty_errors.BRIGHT_RED + '> ' +
-                                       pretty_errors.default_config.line_color,
-                            code_color='  ' +
-                                       pretty_errors.default_config.line_color,
+                            line_color=f"{pretty_errors.BRIGHT_RED}> {pretty_errors.default_config.line_color}",
+                            code_color=f"  {pretty_errors.default_config.line_color}",
                             truncate_code=True,
                             display_locals=True)
     pretty_errors.activate()
 
-    print("  \033[1m\033[44mGoogleHome CLI\033[0m")
+    print(f"{Back.LIGHTBLUE_EX + Back.BLACK}  GoogleHome CLI  ")
     print(
-        "\033[1mMade by\033[0m: P2P-Develop [\033[34mGitHub\033[0m: \033[34m\033[4mhttps://github.com/P2P-Develop\033[0m]"
+        f"{Style.BRIGHT}Made by{Style.RESET_ALL}: P2P-Develop "
+        f"[GitHub: \033[4m{Fore.LIGHTBLUE_EX}https://github.com/P2P-Develop{Style.RESET_ALL}]"
     )
     print(
-        "\033[1mContribute in GitHub\033[0m: \033[34m\033[4mhttps://github.com/P2P-Develop/GoogleHomeCLI\033[0m"
+        f"{Style.BRIGHT}Contribute in GitHub{Style.RESET_ALL}: \033[4m{Fore.LIGHTBLUE_EX}"
+        f"https://github.com/P2P-Develop/GoogleHomeCLI"
     )
     print()
 
@@ -525,7 +541,7 @@ if __name__ == "__main__":
     command_thread.setDaemon(True)
     auto_select()
 
-    print("\033[32mReady.\033[0m")
+    print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  READY  {Back.RESET + Fore.LIGHTWHITE_EX} GoogleHomeCLI is ready to start.")
 
     command_thread.start()
     command_thread.join()

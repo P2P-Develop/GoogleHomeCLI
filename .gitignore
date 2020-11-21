@@ -298,13 +298,6 @@ ipython_config.py
 # pyenv
 .python-version
 
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
-
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow
 __pypackages__/
 
@@ -343,18 +336,3 @@ dmypy.json
 
 # pytype static type analyzer
 .pytype/
-
-### yarn ###
-# https://yarnpkg.com/advanced/qa#which-files-should-be-gitignored
-
-# .yarn/unplugged and .yarn/build-state.yml should likely always be ignored since
-# they typically hold machine-specific build artifacts. Ignoring them might however
-# prevent Zero-Installs from working (to prevent this, set enableScripts to false).
-.yarn/unplugged
-.yarn/build-state.yml
-
-# .yarn/cache and .pnp.* may be safely ignored, but you'll need to run yarn install
-# to regenerate them between each branch switch.
-# Uncomment the following lines if you're not using Zero-Installs:
-# .yarn/cache
-# .pnp.*
