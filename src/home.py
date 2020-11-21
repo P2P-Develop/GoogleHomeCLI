@@ -1,7 +1,7 @@
 import json
 import mimetypes
 import os
-import gc
+from decimal import Decimal, ROUND_HALF_UP
 import re
 import sys
 import threading
@@ -75,8 +75,9 @@ def error(message: str) -> None:
     print(f"{Back.LIGHTRED_EX + Fore.BLACK}  ERROR  {Back.RESET + Fore.LIGHTWHITE_EX} " + message)
 
 
-def ok(time: float) -> None:
-    print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  OK  {Back.RESET + Fore.LIGHTWHITE_EX} Command successfully finished in {time}ms.")
+def ok(execution_time: float) -> None:
+    print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  OK  {Back.RESET + Fore.LIGHTWHITE_EX} "
+          f"The command finished in {Decimal(str(execution_time)).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)}ms.")
 
 
 def quote_check(args: str) -> bool:
@@ -384,6 +385,10 @@ def wait_command() -> None:
             cmd_completer.run_action(ipt)
         except ValueError:
             error("Command not found.")
+
+            continue
+        except TypeError:
+            error("Argument(s) missing or invalid.")
 
             continue
 
