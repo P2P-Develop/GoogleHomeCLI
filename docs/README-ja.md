@@ -72,12 +72,12 @@ Python3 をメインに開発しています。Python2 はサポートしてい�
 3. 以下のコマンドを実行し、必要なライブラリをインストールします。
 
    ```bash
-   $ python3 -m pip install -r requirements.txt
+   $ pipenv install
    ```
 
 4. 以下のコマンドを実行し、スクリプトを起動します。
    ```bash
-   $ python3 src/home.py
+   $ pipenv run start
    ```
 
 ## インタラクティブコメント

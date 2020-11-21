@@ -500,7 +500,7 @@ if __name__ == "__main__":
         error(f"{os.path.dirname(__file__)}/config.yml not found.")
 
     if len(sys.argv) > 1:
-        if any(match in sys.argv for match in ["--version", "--ver", "version", "ver", "-v"]):
+        if any(match in sys.argv for match in ["--version", "--ver", "version", "ver", "-v", "-V"]):
             print("v2.1")
             exit(0)
 

@@ -105,7 +105,7 @@
 
 この行動規範は、https://www.contributor-covenant.org/version/2/0/code_of_conduct.html で利用可能な [Contributor Covenant][homepage] バージョン 2.0 を基に作成されています。
 
-コミュニティへの影響ガイドラインは[Mozilla's code of conduct enforcement ladder](https://github.com/mozilla/diversity)に適合しています。
+コミュニティへの影響ガイドラインは [Mozilla's code of conduct enforcement ladder](https://github.com/mozilla/diversity) に適合しています。
 
 [homepage]: https://www.contributor-covenant.org
 

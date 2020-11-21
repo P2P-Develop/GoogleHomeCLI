@@ -72,12 +72,12 @@ Python3 must be available to use this script.
 3. Install required packages.
 
    ```bash
-   $ python3 -m pip install -r requirements.txt
+   $ pipenv install
    ```
 
 4. Run script.
    ```bash
-   $ python3 src/home.py
+   $ pipenv run start
    ```
 
 ## Interactive comments
