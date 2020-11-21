@@ -1,6 +1,6 @@
 # セキュリティーポリシー
 
-[概要](README-ja.md#概要) | [使用方法](README-ja.md#使用方法) | [コマンド](README-ja.md#コマンド) | [コンフィグ](README-ja.md#コンフィグ) | [貢献ルール](CONTRIBUTING-ja.md) | セキュリティー | [必要なパッケージ](../requirements.txt) | [賛辞](README-ja.md#賛辞)
+[概要](README-ja.md#概要) | [使用方法](README-ja.md#使用方法) | [コマンド](README-ja.md#コマンド) | [設定](README-ja.md#設定) | [貢献ルール](CONTRIBUTING-ja.md) | セキュリティー | [必要なパッケージ](../requirements.txt) | [賛辞](README-ja.md#賛辞)
 
 <details>
 <summary>目次</summary>

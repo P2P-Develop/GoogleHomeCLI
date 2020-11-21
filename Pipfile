@@ -1,0 +1,31 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[scripts]
+dev = "nodemon src/**/*.py"
+start = "python src/home.py"
+format = "autopep8 -ivr ."
+sort = "isort src/home.py"
+lint = "flake8 --show-source ."
+
+[packages]
+prompt-toolkit-action-completer = "*"
+pretty-errors = "*"
+prompt-toolkit = "*"
+PyChromecast = "*"
+PyYAML = "*"
+Pygments = "*"
+gTTS = "*"
+colorama = "*"
+
+[dev-packages]
+autopep8 = "*"
+flake8 = "*"
+watchdog = "*"
+argh = "*"
+isort = "*"
+
+[requires]
+python_version = "3.9"

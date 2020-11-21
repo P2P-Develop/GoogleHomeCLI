@@ -36,6 +36,7 @@
 Control Google Home (Chrome Cast) in any command-line.
 This script can only use Python3, so Python2 isn't supported.
 This script implemented internal command-line.
+Please note that this project is released with a [Contributor Code of Conduct](CODE-OF-CONDUCT.md). By participating in this project you agree to abide by its terms.
 
 ## Usage
 
@@ -71,12 +72,12 @@ Python3 must be available to use this script.
 3. Install required packages.
 
    ```bash
-   $ python3 -m pip install -r requirements.txt
+   $ pipenv install
    ```
 
 4. Run script.
    ```bash
-   $ python3 src/home.py
+   $ pipenv run start
    ```
 
 ## Interactive comments
@@ -165,7 +166,7 @@ Play specified local file / Youtube URL from selected device.
 ## Configuration
 
 The Google Home CLI comes with a configuration file.
-The file name is [`config.yml`](../src/config.yml) and an error will occur if the config file is not found.
+The file name is [`config.yml`](../src/config.yml) and if the config file is not found you will get an error but it will **continue to work**.
 The settings are as following:
 
 |  Name  | Default value | Description                                     |
