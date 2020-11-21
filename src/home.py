@@ -17,9 +17,10 @@ import yaml
 from action_completer import ActionCompleter
 from gtts import gTTS
 from prompt_toolkit import PromptSession
-from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory, ThreadedAutoSuggest
 from prompt_toolkit.completion import FuzzyCompleter
 from prompt_toolkit.filters import Condition
+from prompt_toolkit.history import InMemoryHistory, ThreadedHistory
 from prompt_toolkit.lexers import PygmentsLexer
 from pygments.lexer import RegexLexer, include
 import pygments.token as token
@@ -86,11 +87,14 @@ def quote_check(args: str) -> bool:
            " ".join(args).count("`") % 2 != 0
 
 
-preCasts = pychromecast.get_chromecasts()
+pre_casts = pychromecast.get_chromecasts()
 casts = []
 cmd_completer: ActionCompleter = ActionCompleter()
-nowCast = None
-nowId = 0
+cmd_auto_suggest: ThreadedAutoSuggest = ThreadedAutoSuggest(AutoSuggestFromHistory())
+cmd_history: ThreadedHistory = ThreadedHistory(InMemoryHistory())
+cmd_lexer: PygmentsLexer = PygmentsLexer(CommandLexer)
+now_cast = None
+now_id = 0
 prefix = "> "
 
 
@@ -128,26 +132,26 @@ def _exit_action() -> None:
 
 @cmd_completer.action("speak",
                       display_meta="Play Text-To-Speech from selected device",
-                      active=Condition(lambda: nowCast is not None))
+                      active=Condition(lambda: now_cast is not None))
 @cmd_completer.action("speech",
                       display_meta="Play Text-To-Speech from selected device",
-                      active=Condition(lambda: nowCast is not None))
+                      active=Condition(lambda: now_cast is not None))
 @cmd_completer.action("talk",
                       display_meta="Play Text-To-Speech from selected device",
-                      active=Condition(lambda: nowCast is not None))
+                      active=Condition(lambda: now_cast is not None))
 @cmd_completer.action("tts",
                       display_meta="Play Text-To-Speech from selected device",
-                      active=Condition(lambda: nowCast is not None))
+                      active=Condition(lambda: now_cast is not None))
 @cmd_completer.param(None)
 def _tts_action(*args) -> None:
-    global nowCast
+    global now_cast
 
     if quote_check(" ".join(args)):
         error("Quotes are not closed.")
 
         return
 
-    if nowCast is not None:
+    if now_cast is not None:
         text = " ".join(args).replace("\"", "").replace("\\", "\"").replace(
             "'", "").replace("`", "")
 
@@ -157,7 +161,7 @@ def _tts_action(*args) -> None:
 
         tts.save(f"cache/{filename}")
 
-        media = nowCast.media_controller
+        media = now_cast.media_controller
 
         media.play_media(f"cache/{filename}", "audio/mp3")
         media.block_until_active()
@@ -191,19 +195,19 @@ def _reconnect_action() -> None:
 @cmd_completer.action("show", display_meta="Show connected devices status")
 @cmd_completer.action("status", display_meta="Show connected devices status")
 def _status_action() -> None:
-    global nowCast
+    global now_cast
 
-    if nowCast is not None:
+    if now_cast is not None:
         print(f"{Back.LIGHTBLUE_EX + Fore.BLACK}  SUMMARY  {Back.RESET + Fore.LIGHTWHITE_EX} Selected device summary:")
-        print(f"    {Fore.GREEN}Id{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(nowId) + Fore.WHITE + Style.DIM},")
-        print(f"    {Fore.GREEN}Name{Fore.RESET}: {Fore.LIGHTCYAN_EX + nowCast.device.friendly_name + Fore.WHITE + Style.DIM},")
-        print(f"    {Fore.GREEN}Model{Fore.RESET}: {Fore.LIGHTCYAN_EX + nowCast.device.model_name}")
+        print(f"    {Fore.GREEN}Id{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(now_id) + Fore.WHITE + Style.DIM},")
+        print(f"    {Fore.GREEN}Name{Fore.RESET}: {Fore.LIGHTCYAN_EX + now_cast.device.friendly_name + Fore.WHITE + Style.DIM},")
+        print(f"    {Fore.GREEN}Model{Fore.RESET}: {Fore.LIGHTCYAN_EX + now_cast.device.model_name}")
         print()
         print(f"{Back.LIGHTBLUE_EX + Fore.BLACK}  STATUS  {Back.RESET + Fore.LIGHTWHITE_EX} Selected device status:")
-        print(f"    {Fore.GREEN}Idle{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(nowCast.is_idle) + Fore.WHITE + Style.DIM},")
-        print(f"    {Fore.GREEN}Volume{Fore.RESET}: {Fore.LIGHTCYAN_EX + str('{:.0%}'.format(nowCast.status.volume_level)) + Fore.WHITE + Style.DIM}")
+        print(f"    {Fore.GREEN}Idle{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(now_cast.is_idle) + Fore.WHITE + Style.DIM},")
+        print(f"    {Fore.GREEN}Volume{Fore.RESET}: {Fore.LIGHTCYAN_EX + str('{:.0%}'.format(now_cast.status.volume_level)) + Fore.WHITE + Style.DIM}")
 
-        media = nowCast.media_controller
+        media = now_cast.media_controller
 
         if media.is_active:
             print(f"{Back.LIGHTMAGENTA_EX + Fore.BLACK}  PLAYING  {Back.RESET + Fore.LIGHTWHITE_EX} Playing music:")
@@ -211,14 +215,14 @@ def _status_action() -> None:
             print(f"    {Fore.GREEN}Media{Fore.RESET}: {Fore.LIGHTCYAN_EX + media.status.content_id + Fore.WHITE + Style.DIM}")
 
 
-@cmd_completer.action("kill", display_meta="Kill the selected device", active=Condition(lambda: nowCast is not None))
+@cmd_completer.action("kill", display_meta="Kill the selected device", active=Condition(lambda: now_cast is not None))
 def _kill_action() -> None:
-    if not nowCast.is_idle:
+    if not now_cast.is_idle:
         confirm = input(f"{Fore.BLUE}? {Fore.LIGHTWHITE_EX}Are you sure? {Fore.WHITE + Style.DIM}(Y/n){Style.RESET_ALL} ").lower()
 
         if confirm in "y" or confirm in "\n" or confirm in "true":
             print("Killing...")
-            nowCast.quit_app()
+            now_cast.quit_app()
         else:
             print("Cancelled.")
     else:
@@ -231,16 +235,16 @@ def _kill_action() -> None:
                      display_meta="Select device \"{completion}\"")
 def _use_action(name: str) -> None:
     global casts
-    global nowCast
-    global nowId
+    global now_cast
+    global now_id
 
     if name.isdecimal() and len(casts) >= int(name) and name != "0":
-        nowCast = casts[int(name) - 1]
+        now_cast = casts[int(name) - 1]
 
-        print_device(int(name), nowCast.device)
+        print_device(int(name), now_cast.device)
 
-        nowId = int(name)
-        nowCast.wait()
+        now_id = int(name)
+        now_cast.wait()
 
         return
 
@@ -248,9 +252,9 @@ def _use_action(name: str) -> None:
         if cast.device.friendly_name == name:
             print_device(i, cast.device)
 
-            nowId = i
-            nowCast = cast
-            nowCast.wait()
+            now_id = i
+            now_cast = cast
+            now_cast.wait()
 
             return
 
@@ -261,24 +265,24 @@ def _use_action(name: str) -> None:
 @cmd_completer.action(
     "play",
     display_meta="Play URL/local music or video file from the selected device",
-    active=Condition(lambda: nowCast is not None))
+    active=Condition(lambda: now_cast is not None))
 @cmd_completer.action(
     "sound",
     display_meta="Play URL/local music or video file from the selected device",
-    active=Condition(lambda: nowCast is not None))
+    active=Condition(lambda: now_cast is not None))
 @cmd_completer.action(
     "music",
     display_meta="Play URL/local music or video file from the selected device",
-    active=Condition(lambda: nowCast is not None))
+    active=Condition(lambda: now_cast is not None))
 @cmd_completer.action(
     "p",
     display_meta="Play URL/local music or video file from the selected device",
-    active=Condition(lambda: nowCast is not None))
+    active=Condition(lambda: now_cast is not None))
 @cmd_completer.param(None)
 def _play_action(url: str) -> None:
-    global nowCast
+    global now_cast
 
-    if nowCast is None:
+    if now_cast is None:
         error("Device isn't selected!")
 
         return
@@ -302,7 +306,7 @@ def _play_action(url: str) -> None:
             url = yt["url"]
             mime = yt["mime"]
 
-        media = nowCast.media_controller
+        media = now_cast.media_controller
 
         media.play_media(url, mime)
         media.block_until_active()
@@ -318,18 +322,18 @@ def _play_action(url: str) -> None:
 def con() -> bool:
     global casts
 
-    if len(preCasts[0]) == 0:
+    if len(pre_casts[0]) == 0:
         error("Device not found.")
         return False
 
-    if len(preCasts) - 1 > 1:
+    if len(pre_casts) - 1 > 1:
         print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  SUCCESS  {Back.RESET} "
-              f"{Fore.LIGHTCYAN_EX + str(len(preCasts) - 1) + Fore.RESET} device found.")
+              f"{Fore.LIGHTCYAN_EX + str(len(pre_casts) - 1) + Fore.RESET} device found.")
     else:
         print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  SUCCESS  {Back.RESET} "
-              f"{Fore.LIGHTCYAN_EX + str(len(preCasts) - 1) + Fore.RESET} devices found.")
+              f"{Fore.LIGHTCYAN_EX + str(len(pre_casts) - 1) + Fore.RESET} devices found.")
 
-    for cast in preCasts:
+    for cast in pre_casts:
         if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and cast[0].device.cast_type == "audio":
             casts += cast
 
@@ -340,15 +344,15 @@ def con() -> bool:
 
 def s_con() -> None:
     global casts
-    global preCasts
+    global pre_casts
 
-    preCasts = pychromecast.get_chromecasts()
+    pre_casts = pychromecast.get_chromecasts()
 
-    if len(preCasts[0]) == 0:
+    if len(pre_casts[0]) == 0:
         return
 
     casts += [
-        cast for cast in preCasts
+        cast for cast in pre_casts
         if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and cast[0].device.cast_type == "audio"
     ]
 
@@ -357,16 +361,21 @@ def wait_command() -> None:
     global cmd_completer
     global prefix
 
-    session = PromptSession()
+    session = PromptSession(
+        prefix,
+        completer=FuzzyCompleter(cmd_completer),
+        complete_while_typing=True,
+        complete_in_thread=True,
+        lexer=cmd_lexer,
+        mouse_support=True,
+        enable_history_search=True,
+        auto_suggest=cmd_auto_suggest,
+        history=cmd_history
+    )
 
     while True:
         try:
-            ipt = session.prompt(prefix,
-                                 completer=FuzzyCompleter(cmd_completer),
-                                 auto_suggest=AutoSuggestFromHistory(),
-                                 lexer=PygmentsLexer(CommandLexer),
-                                 complete_in_thread=True,
-                                 mouse_support=True)
+            ipt = session.prompt()
         except KeyboardInterrupt:
             print(f"{Fore.LIGHTGREEN_EX}Bye.")
 
@@ -405,15 +414,15 @@ def print_device(device_id: int, device) -> None:
 
 
 def auto_select() -> None:
-    global nowCast
+    global now_cast
 
     if len(casts) == 0:
         return
 
-    nowCast = preCasts[0][0]
+    now_cast = pre_casts[0][0]
 
-    print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  SUCCESS  {Back.RESET + Fore.LIGHTWHITE_EX} Device selected")
-    nowCast.wait()
+    print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  SUCCESS  {Back.RESET + Fore.LIGHTWHITE_EX} Device selected.")
+    now_cast.wait()
 
 
 def is_url(url: str):
@@ -451,7 +460,7 @@ def get_youtube_file(youtube_id: str):
 
     if resp.status_code != 200:
         error(f"Youtube returned status {Fore.CYAN + str(resp.status_code)}")
-        print(resp.text)
+        error(resp.text)
 
         return None
 
@@ -492,7 +501,7 @@ if __name__ == "__main__":
 
     if len(sys.argv) > 1:
         if any(match in sys.argv for match in ["--version", "--ver", "version", "ver", "-v"]):
-            print("v2.0")
+            print("v2.1")
             exit(0)
 
         del sys.argv[0]

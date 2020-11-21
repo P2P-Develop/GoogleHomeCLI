@@ -1,14 +1,13 @@
-FROM python:3.9 AS builder
+FROM nikolaik/python-nodejs:python3.9-nodejs15 AS builder
 
-WORKDIR /app
+WORKDIR /opt/app
 
 COPY Pipfile Pipfile.lock ./
 
-RUN pip install pipenv \
- && pipenv install --system
+RUN pipenv install --system
 
 
-FROM python:3.9-slim
+FROM nikolaik/python-nodejs:python3.9-nodejs15-slim
 
 ENV PYTHONUNBUFFERED=1
 
@@ -16,4 +15,6 @@ COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python
 
 COPY . ./
 
-CMD ["python", "src/home.py"]
+RUN npm install -g nodemon
+
+CMD ["pipenv", "run", "dev"]
