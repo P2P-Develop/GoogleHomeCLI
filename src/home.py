@@ -35,7 +35,7 @@ class CommandLexer(RegexLexer):
             include('string')
         ],
         'basic': [
-            (r'\b(echo|exit|bye|stop|list|devices|ls|reconnect|'
+            (r'\b(echo|exit|bye|stop|list|devices?|ls|reconnect|'
              r'rc|show|status|kill|use|select|play|sound|music|'
              r'p|speech|speak|talk|tts)(?=[\s)`])?', pygments.token.Name.Builtin),
             (r'\\[\w\W\"\'\`]', pygments.token.String.Escape),
