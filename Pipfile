@@ -17,6 +17,7 @@ PyChromecast = "*"
 PyYAML = "*"
 Pygments = "*"
 gTTS = "*"
+colorama = "*"
 
 [dev-packages]
 autopep8 = "*"

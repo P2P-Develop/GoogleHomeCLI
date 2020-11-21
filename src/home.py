@@ -1,11 +1,14 @@
 import json
 import mimetypes
 import os
+import gc
 import re
 import sys
 import threading
+import time
 from datetime import datetime
 from urllib import parse
+from colorama import init, Fore, Back, Style
 
 import pretty_errors
 import pychromecast
@@ -19,7 +22,7 @@ from prompt_toolkit.completion import FuzzyCompleter
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.lexers import PygmentsLexer
 from pygments.lexer import RegexLexer, include
-import pygments.token
+import pygments.token as token
 
 
 class CommandLexer(RegexLexer):
@@ -37,28 +40,28 @@ class CommandLexer(RegexLexer):
         'basic': [
             (r'\b(echo|exit|bye|stop|list|devices?|ls|reconnect|'
              r'rc|show|status|kill|use|select|play|sound|music|'
-             r'p|speech|speak|talk|tts)(?=[\s)`])?', pygments.token.Name.Builtin),
-            (r'\\[\w\W\"\'\`]', pygments.token.String.Escape),
-            (r'^(//|#|"|;|/\*.*?\*/).*$', pygments.token.Comment.Single)
+             r'p|speech|speak|talk|tts)(?=[\s)`])?', token.Name.Builtin),
+            (r'\\[\w\W\"\'\`]', token.String.Escape),
+            (r'^(//|#|"|;|/\*.*?\*/).*$', token.Comment.Single)
         ],
         'data': [
-            (r'\|', pygments.token.Punctuation),
-            (r'\s+', pygments.token.Text),
-            (r'\d+\b', pygments.token.Number)
+            (r'\|', token.Punctuation),
+            (r'\s+', token.Text),
+            (r'\d+\b', token.Number)
         ],
         'math': [
-            (r'[-+*/%^|&]|\*\*|\|\|', pygments.token.Operator),
-            (r'\d+#\d+', pygments.token.Number),
-            (r'\d+#(?! )', pygments.token.Number),
-            (r'\d+', pygments.token.Number)
+            (r'[-+*/%^|&]|\*\*|\|\|', token.Operator),
+            (r'\d+#\d+', token.Number),
+            (r'\d+#(?! )', token.Number),
+            (r'\d+', token.Number)
         ],
         'string': [
-            (r'(?s)\$"(\\\\|\\[0-7]+|\\.|[^"\\])*"', pygments.token.String.Double),
-            (r'(?s)".*?"', pygments.token.String.Double),
-            (r"(?s)\$'(\\\\|\\[0-7]+|\\.|[^'\\])*'", pygments.token.String.Single),
-            (r"(?s)'.*?'", pygments.token.String.Single),
-            (r"(?s)\$`(\\\\|\\[0-7]+|\\.|[^`\\])*`", pygments.token.String.Backtick),
-            (r"(?s)`.*?`", pygments.token.String.Backtick)
+            (r'(?s)\$"(\\\\|\\[0-7]+|\\.|[^"\\])*"', token.String.Double),
+            (r'(?s)".*?"', token.String.Double),
+            (r"(?s)\$'(\\\\|\\[0-7]+|\\.|[^'\\])*'", token.String.Single),
+            (r"(?s)'.*?'", token.String.Single),
+            (r"(?s)\$`(\\\\|\\[0-7]+|\\.|[^`\\])*`", token.String.Backtick),
+            (r"(?s)`.*?`", token.String.Backtick)
         ]
     }
 
@@ -69,11 +72,11 @@ def die(message: str, code: int) -> None:
 
 
 def error(message: str) -> None:
-    print("\033[31m\033[1mError\033[0m: " + message)
+    print(f"{Back.LIGHTRED_EX + Fore.BLACK}  ERROR  {Back.RESET + Fore.LIGHTWHITE_EX} " + message)
 
 
-def ok() -> None:
-    print("\033[34mOK.\033[0m")
+def ok(time: float) -> None:
+    print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  OK  {Back.RESET + Fore.LIGHTWHITE_EX} Command successfully finished in {time}ms.")
 
 
 def quote_check(args: str) -> bool:
@@ -119,7 +122,7 @@ def _echo_action(*args) -> None:
 @cmd_completer.action("bye", display_meta="Exit this script")
 @cmd_completer.action("stop", display_meta="Exit the script")
 def _exit_action() -> None:
-    die("\033[32mBye.\033[0m", 0)
+    die(f"{Fore.LIGHTGREEN_EX}Bye.", 0)
 
 
 @cmd_completer.action("speak",
@@ -190,25 +193,27 @@ def _status_action() -> None:
     global nowCast
 
     if nowCast is not None:
-        print("Select: [Id=" + str(nowId) + ", Name=" +
-              nowCast.device.friendly_name + ", Model=" +
-              nowCast.device.model_name + "]")
-        print("\033[1mStatus\033[0m:")
-        print("    Idle: " + str(nowCast.is_idle))
-        print("    Volume: " + str("{:.0%}".format(nowCast.status.volume_level)))
+        print(f"{Back.LIGHTBLUE_EX + Fore.BLACK}  SUMMARY  {Back.RESET + Fore.LIGHTWHITE_EX} Selected device summary:")
+        print(f"    {Fore.GREEN}Id{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(nowId) + Fore.WHITE + Style.DIM},")
+        print(f"    {Fore.GREEN}Name{Fore.RESET}: {Fore.LIGHTCYAN_EX + nowCast.device.friendly_name + Fore.WHITE + Style.DIM},")
+        print(f"    {Fore.GREEN}Model{Fore.RESET}: {Fore.LIGHTCYAN_EX + nowCast.device.model_name}")
+        print()
+        print(f"{Back.LIGHTBLUE_EX + Fore.BLACK}  STATUS  {Back.RESET + Fore.LIGHTWHITE_EX} Selected device status:")
+        print(f"    {Fore.GREEN}Idle{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(nowCast.is_idle) + Fore.WHITE + Style.DIM},")
+        print(f"    {Fore.GREEN}Volume{Fore.RESET}: {Fore.LIGHTCYAN_EX + str('{:.0%}'.format(nowCast.status.volume_level)) + Fore.WHITE + Style.DIM}")
 
         media = nowCast.media_controller
 
         if media.is_active:
-            print("\033[1m\033[35m♪\033[0m \033[1mPlaying\033[0m:")
-            print("    Current: " + str(media.status.current_time))
-            print("    Media: " + media.status.content_id)
+            print(f"{Back.LIGHTMAGENTA_EX + Fore.BLACK}  PLAYING  {Back.RESET + Fore.LIGHTWHITE_EX} Playing music:")
+            print(f"    {Fore.GREEN}Current{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(media.status.current_time) + Fore.WHITE + Style.DIM},")
+            print(f"    {Fore.GREEN}Media{Fore.RESET}: {Fore.LIGHTCYAN_EX + media.status.content_id + Fore.WHITE + Style.DIM}")
 
 
 @cmd_completer.action("kill", display_meta="Kill the selected device", active=Condition(lambda: nowCast is not None))
 def _kill_action() -> None:
     if not nowCast.is_idle:
-        confirm = input("\033[1mAre you sure?\033[0m (Y/n): ").lower()
+        confirm = input(f"{Fore.BLUE}? {Fore.LIGHTWHITE_EX}Are you sure? {Fore.WHITE + Style.DIM}(Y/n){Style.RESET_ALL} ").lower()
 
         if confirm in "y" or confirm in "\n" or confirm in "true":
             print("Killing...")
@@ -249,7 +254,7 @@ def _use_action(name: str) -> None:
             return
 
     error("Device not found.")
-    print("\033[1mls\033[0m to show device list.")
+    print(f"{Fore.LIGHTGREEN_EX}ls{Fore.LIGHTWHITE_EX} to show found device list.")
 
 
 @cmd_completer.action(
@@ -304,7 +309,7 @@ def _play_action(url: str) -> None:
 
         return
 
-    error("\033[4m\033[34m" + url + "\033[0m is not url!")
+    error(f"\033[4m{Fore.LIGHTBLUE_EX + url + Style.RESET_ALL} is not a valid url!")
 
     return
 
@@ -317,11 +322,11 @@ def con() -> bool:
         return False
 
     if len(preCasts) - 1 > 1:
-        print("\033[32mFound\033[0m: \033[1m" + str(len(preCasts) - 1) +
-              "\033[0m device found.")
+        print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  SUCCESS  {Back.RESET} "
+              f"{Fore.LIGHTCYAN_EX + str(len(preCasts) - 1) + Fore.RESET} device found.")
     else:
-        print("\033[32mFound\033[0m: \033[1m" + str(len(preCasts) - 1) +
-              "\033[0m devices found.")
+        print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  SUCCESS  {Back.RESET} "
+              f"{Fore.LIGHTCYAN_EX + str(len(preCasts) - 1) + Fore.RESET} devices found.")
 
     for cast in preCasts:
         if str(type(cast)) != "<class 'zeroconf.ServiceBrowser'>" and cast[0].device.cast_type == "audio":
@@ -354,8 +359,6 @@ def wait_command() -> None:
     session = PromptSession()
 
     while True:
-        ipt = ""
-
         try:
             ipt = session.prompt(prefix,
                                  completer=FuzzyCompleter(cmd_completer),
@@ -364,23 +367,18 @@ def wait_command() -> None:
                                  complete_in_thread=True,
                                  mouse_support=True)
         except KeyboardInterrupt:
-            print("\033[32mBye.\033[0m")
+            print(f"{Fore.LIGHTGREEN_EX}Bye.")
 
             break
 
         if any(ipt.startswith(match) for match in ["#", "//", '"', ";"]):
-            ok()
-
             continue
-        elif ipt.startswith("/*"):
-            if not ipt.endswith("*/"):
-                error("This comment block must be enclosed in */")
-
-                continue
-
-            ok()
-
+        elif ipt.startswith("/*") and not ipt.endswith("*/"):
+            error("This comment block must be enclosed in */")
+        elif ipt.startswith("/*") and ipt.endswith("*/"):
             continue
+
+        start = time.perf_counter()
 
         try:
             cmd_completer.run_action(ipt)
@@ -389,14 +387,16 @@ def wait_command() -> None:
 
             continue
 
-        ok()
+        end = time.perf_counter()
+
+        ok(end - start)
 
 
 def print_device(device_id: int, device) -> None:
-    print("\033[1mDevice\033[0m: ["
-          f"Id={str(device_id)},"
-          f"Name={device.friendly_name},"
-          f"Model={device.model_name}")
+    print(f"{Back.LIGHTBLUE_EX + Fore.BLACK}  DEVICE  ")
+    print(f"    {Fore.GREEN}Id{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(device_id) + Fore.WHITE + Style.DIM},")
+    print(f"    {Fore.GREEN}Name{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(device.friendly_name) + Fore.WHITE + Style.DIM},")
+    print(f"    {Fore.GREEN}Model{Fore.RESET}: {Fore.LIGHTCYAN_EX + str(device.model_name)}")
 
 
 def auto_select() -> None:
@@ -407,7 +407,7 @@ def auto_select() -> None:
 
     nowCast = preCasts[0][0]
 
-    print("\033[1mDevice selected\033[0m:")
+    print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  SUCCESS  {Back.RESET + Fore.LIGHTWHITE_EX} Device selected")
     nowCast.wait()
 
 
@@ -445,7 +445,7 @@ def get_youtube_file(youtube_id: str):
     resp = requests.get(f"https://youtube.com/get_video_info?video_id={youtube_id}&asv=3&hl=en")
 
     if resp.status_code != 200:
-        error(f"Youtube returned status \033[32m{str(resp.status_code)}\033[0m")
+        error(f"Youtube returned status {Fore.CYAN + str(resp.status_code)}")
         print(resp.text)
 
         return None
@@ -461,7 +461,7 @@ def get_youtube_file(youtube_id: str):
         param[lst[0]] = parse.unquote(lst[1])
 
     if "status" in param and param["status"] == "fail":
-        error("Youtube response isn't includes \033[1m\033[32emstatus\033[0m")
+        error(f"Youtube response isn't includes {Fore.CYAN}status")
 
         return None
 
@@ -475,13 +475,15 @@ def get_youtube_file(youtube_id: str):
 
 
 if __name__ == "__main__":
+    init(autoreset=True)
+
     try:
         with open(f"{os.path.dirname(__file__)}/config.yml", 'r') as file:
             config = yaml.load(file, Loader=yaml.SafeLoader)
             if config is not None and "prompt" in config:
                 prefix = f"{config['prompt']} "
     except FileNotFoundError:
-        error("Config file not found.")
+        error(f"{os.path.dirname(__file__)}/config.yml not found.")
 
     if len(sys.argv) > 1:
         if any(match in sys.argv for match in ["--version", "--ver", "version", "ver", "-v"]):
@@ -497,26 +499,26 @@ if __name__ == "__main__":
         cmd_completer.run_action(" ".join(sys.argv))
         exit(0)
 
-    pretty_errors.configure(separator_character='*',
+    pretty_errors.configure(separator_character="*",
                             filename_display=pretty_errors.FILENAME_EXTENDED,
                             line_number_first=True,
                             display_link=True,
                             lines_before=5,
                             lines_after=2,
-                            line_color=pretty_errors.BRIGHT_RED + '> ' +
-                                       pretty_errors.default_config.line_color,
-                            code_color='  ' +
-                                       pretty_errors.default_config.line_color,
+                            line_color=f"{pretty_errors.BRIGHT_RED}> {pretty_errors.default_config.line_color}",
+                            code_color=f"  {pretty_errors.default_config.line_color}",
                             truncate_code=True,
                             display_locals=True)
     pretty_errors.activate()
 
-    print("  \033[1m\033[44mGoogleHome CLI\033[0m")
+    print(f"{Back.LIGHTBLUE_EX + Back.BLACK}  GoogleHome CLI  ")
     print(
-        "\033[1mMade by\033[0m: P2P-Develop [\033[34mGitHub\033[0m: \033[34m\033[4mhttps://github.com/P2P-Develop\033[0m]"
+        f"{Style.BRIGHT}Made by{Style.RESET_ALL}: P2P-Develop "
+        f"[GitHub: \033[4m{Fore.LIGHTBLUE_EX}https://github.com/P2P-Develop{Style.RESET_ALL}]"
     )
     print(
-        "\033[1mContribute in GitHub\033[0m: \033[34m\033[4mhttps://github.com/P2P-Develop/GoogleHomeCLI\033[0m"
+        f"{Style.BRIGHT}Contribute in GitHub{Style.RESET_ALL}: \033[4m{Fore.LIGHTBLUE_EX}"
+        f"https://github.com/P2P-Develop/GoogleHomeCLI"
     )
     print()
 
@@ -525,7 +527,7 @@ if __name__ == "__main__":
     command_thread.setDaemon(True)
     auto_select()
 
-    print("\033[32mReady.\033[0m")
+    print(f"{Back.LIGHTGREEN_EX + Fore.BLACK}  READY  {Back.RESET + Fore.LIGHTWHITE_EX} GoogleHomeCLI is ready to start.")
 
     command_thread.start()
     command_thread.join()
